@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://ef861pwvwoo7"
+path="res://.godot/imported/Wheat_3.obj-9bb186590dc5663f8d095fe84f4423a3.mesh"
+
+[deps]
+
+files=["res://.godot/imported/Wheat_3.obj-9bb186590dc5663f8d095fe84f4423a3.mesh"]
+
+source_file="res://assets/models/crops/Wheat_3.obj"
+dest_files=["res://.godot/imported/Wheat_3.obj-9bb186590dc5663f8d095fe84f4423a3.mesh", "res://.godot/imported/Wheat_3.obj-9bb186590dc5663f8d095fe84f4423a3.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

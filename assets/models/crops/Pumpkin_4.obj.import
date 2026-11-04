@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dnyq6oknmfgjq"
+path="res://.godot/imported/Pumpkin_4.obj-772f7d93f7e49fe36e09e7db65545b66.mesh"
+
+[deps]
+
+files=["res://.godot/imported/Pumpkin_4.obj-772f7d93f7e49fe36e09e7db65545b66.mesh"]
+
+source_file="res://assets/models/crops/Pumpkin_4.obj"
+dest_files=["res://.godot/imported/Pumpkin_4.obj-772f7d93f7e49fe36e09e7db65545b66.mesh", "res://.godot/imported/Pumpkin_4.obj-772f7d93f7e49fe36e09e7db65545b66.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false
