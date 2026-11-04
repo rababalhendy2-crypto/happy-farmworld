@@ -1,0 +1,102 @@
+name: Build Farm World
+
+on:
+  push:
+    branches: [main, unity]
+    paths: ['Assets/**', 'Packages/**', 'ProjectSettings/**', '.github/workflows/build.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.targetPlatform }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform: [Android, WebGL]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space (Android SDK + IL2CPP need room)
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" /usr/local/lib/android/sdk/ndk || true
+          df -h /
+
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-${{ matrix.targetPlatform }}-
+
+      - name: Build with Unity 6
+        id: unity
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          unityVersion: 6000.0.85f1
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildMethod: FarmWorld.EditorTools.BuildScript.BuildFromCommandLine
+          buildName: FarmWorld
+          versioning: None
+          customParameters: -logFile /github/workspace/unity-editor.log
+
+      - name: Publish build to the builds branch
+        if: success()
+        run: |
+          set -e
+          sudo chown -R "$(id -u)":"$(id -g)" build || true
+          git config user.name "farm-world-ci"
+          git config user.email "ci@users.noreply.github.com"
+          git fetch origin builds:builds || true
+          rm -rf /tmp/out && mkdir -p /tmp/out
+          if [ "${{ matrix.targetPlatform }}" = "Android" ]; then
+            find build/Android -name "*.apk" -exec cp {} /tmp/out/FarmWorld-Unity.apk \;
+          else
+            cp -r build/WebGL/FarmWorld /tmp/out/web 2>/dev/null || cp -r build/WebGL/* /tmp/out/web
+          fi
+          ls -la /tmp/out
+          for attempt in 1 2 3 4 5; do
+            rm -rf /tmp/wt && git worktree prune
+            git worktree add /tmp/wt builds
+            cd /tmp/wt
+            git pull --rebase origin builds || true
+            if [ "${{ matrix.targetPlatform }}" = "Android" ]; then
+              cp /tmp/out/FarmWorld-Unity.apk .
+            else
+              rm -rf web && cp -r /tmp/out/web web
+            fi
+            echo "${{ matrix.targetPlatform }}: ${GITHUB_SHA} $(date -u +%FT%TZ)" >> BUILDS.log
+            git add -A
+            git commit -m "CI: ${{ matrix.targetPlatform }} build of ${GITHUB_SHA::7}" || true
+            if git push origin builds; then break; fi
+            cd - && sleep $((attempt * 5))
+          done
+
+      - name: Save failure report to ci-logs branch
+        if: failure()
+        run: |
+          git config user.name "farm-world-ci"
+          git config user.email "ci@users.noreply.github.com"
+          mkdir -p /tmp/log
+          echo "run ${GITHUB_RUN_ID} ${{ matrix.targetPlatform }} ${GITHUB_SHA}" > /tmp/log/${{ matrix.targetPlatform }}.txt
+          curl -sSL -H "Authorization: Bearer ${{ github.token }}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs" > /tmp/log/jobs.json || true
+          sudo find . -maxdepth 3 -name "*.log" -exec cp {} /tmp/log/ \; || true
+          sudo chown -R "$(id -u)" /tmp/log || true
+          tail -c 3000000 /tmp/log/unity-editor.log > /tmp/log/unity-editor-tail.log 2>/dev/null && rm -f /tmp/log/unity-editor.log || true
+          git checkout --orphan ci-logs-tmp
+          git rm -rf . -q || true
+          cp -r /tmp/log/* .
+          git add -A && git commit -qm "CI failure ${{ matrix.targetPlatform }} ${GITHUB_SHA::7}"
+          git push -f origin HEAD:ci-logs-${{ matrix.targetPlatform }}
