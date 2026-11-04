@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: build-${{ github.ref }}
@@ -49,7 +50,6 @@ jobs:
           buildMethod: FarmWorld.EditorTools.BuildScript.BuildFromCommandLine
           buildName: FarmWorld
           versioning: None
-          customParameters: -logFile /github/workspace/unity-editor.log
 
       - name: Publish build to the builds branch
         if: success()
@@ -83,20 +83,32 @@ jobs:
             cd - && sleep $((attempt * 5))
           done
 
-      - name: Save failure report to ci-logs branch
-        if: failure()
+  report:
+    name: Failure report
+    needs: build
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Collect logs of failed jobs into the ci-logs branch
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -x
+          mkdir -p /tmp/log
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs" > /tmp/log/jobs.json || true
+          for id in $(jq -r '.jobs[] | select(.conclusion=="failure") | .id' /tmp/log/jobs.json); do
+            name=$(jq -r ".jobs[] | select(.id==$id) | .name" /tmp/log/jobs.json)
+            gh api "repos/${GITHUB_REPOSITORY}/actions/jobs/$id/logs" > "/tmp/log/full-$name.log" || true
+            grep -nE "error|Error|ERROR|exception|Exception|failed|Failed" "/tmp/log/full-$name.log" | head -400 > "/tmp/log/errors-$name.log" || true
+            tail -n 2500 "/tmp/log/full-$name.log" > "/tmp/log/tail-$name.log"
+            rm -f "/tmp/log/full-$name.log"
+          done
+          echo "run ${GITHUB_RUN_ID} sha ${GITHUB_SHA}" > /tmp/log/RUN.txt
           git config user.name "farm-world-ci"
           git config user.email "ci@users.noreply.github.com"
-          mkdir -p /tmp/log
-          echo "run ${GITHUB_RUN_ID} ${{ matrix.targetPlatform }} ${GITHUB_SHA}" > /tmp/log/${{ matrix.targetPlatform }}.txt
-          curl -sSL -H "Authorization: Bearer ${{ github.token }}" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs" > /tmp/log/jobs.json || true
-          sudo find . -maxdepth 3 -name "*.log" -exec cp {} /tmp/log/ \; || true
-          sudo chown -R "$(id -u)" /tmp/log || true
-          tail -c 3000000 /tmp/log/unity-editor.log > /tmp/log/unity-editor-tail.log 2>/dev/null && rm -f /tmp/log/unity-editor.log || true
           git checkout --orphan ci-logs-tmp
           git rm -rf . -q || true
-          cp -r /tmp/log/* .
-          git add -A && git commit -qm "CI failure ${{ matrix.targetPlatform }} ${GITHUB_SHA::7}"
-          git push -f origin HEAD:ci-logs-${{ matrix.targetPlatform }}
+          cp /tmp/log/* .
+          git add -A && git commit -qm "CI failure report ${GITHUB_SHA::7}"
+          git push -f origin HEAD:ci-logs
