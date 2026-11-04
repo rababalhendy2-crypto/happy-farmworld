@@ -232,7 +232,11 @@ func _build_decoration() -> void:
 	# Water trough and hay in pens
 	MF.box(self, Vector3(1.6, 0.4, 0.5), Color("#8a5a36"), Vector3(12.2, 0.2, 4.2))
 	MF.box(self, Vector3(1.4, 0.1, 0.35), Color("#58b7ea"), Vector3(12.2, 0.42, 4.2))
-	MF.box(self, Vector3(1.0, 0.7, 1.0), Color("#e8c547"), Vector3(7.4, 0.35, -1.7))
+	var hay := Node3D.new()
+	hay.position = Vector3(7.6, 0, -1.6)
+	add_child(hay)
+	if not MF.building_model(hay, "Hay.obj", Vector3(1.4, 1.0, 1.4), 30.0):
+		MF.box(hay, Vector3(1.0, 0.7, 1.0), Color("#e8c547"), Vector3(0, 0.35, 0))
 	# Trees around the edge
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42

@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dansr242k4la0"
+path="res://.godot/imported/Well.obj-2d18487de9e98de403128780f5d6aeda.mesh"
+
+[deps]
+
+files=["res://.godot/imported/Well.obj-2d18487de9e98de403128780f5d6aeda.mesh"]
+
+source_file="res://assets/models/village/Well.obj"
+dest_files=["res://.godot/imported/Well.obj-2d18487de9e98de403128780f5d6aeda.mesh", "res://.godot/imported/Well.obj-2d18487de9e98de403128780f5d6aeda.mesh"]
+
+[params]
+
+generate_tangents=false
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

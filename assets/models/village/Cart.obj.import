@@ -1,0 +1,22 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://c6vwm3cr6ka4y"
+path="res://.godot/imported/Cart.obj-e6b11c7fda10d11a4803afcc6eee7e4b.mesh"
+
+[deps]
+
+files=["res://.godot/imported/Cart.obj-e6b11c7fda10d11a4803afcc6eee7e4b.mesh"]
+
+source_file="res://assets/models/village/Cart.obj"
+dest_files=["res://.godot/imported/Cart.obj-e6b11c7fda10d11a4803afcc6eee7e4b.mesh", "res://.godot/imported/Cart.obj-e6b11c7fda10d11a4803afcc6eee7e4b.mesh"]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+optimize_mesh=true
+force_disable_mesh_compression=false

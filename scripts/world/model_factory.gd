@@ -64,7 +64,7 @@ static func model(parent: Node3D, path: String, pos: Vector3, h: float = 0.0, ro
 ## The nature pack has plain grey materials -> trunk/stem gets brown, the rest gets `tint`.
 static func _recolor(mi: MeshInstance3D, path: String, tint: Color) -> void:
 	var m := mi.mesh
-	if path.begins_with("crops/"):
+	if not path.begins_with("nature/"):
 		for i in m.get_surface_count():
 			var sm: Material = m.surface_get_material(i)
 			if sm is StandardMaterial3D:
@@ -88,6 +88,26 @@ static func _recolor(mi: MeshInstance3D, path: String, tint: Color) -> void:
 			elif i == low and m.get_surface_count() > 1:
 				c = Color("#8a5a36")
 			mi.set_surface_override_material(i, mat(c))
+
+## Places a village-pack building so it fills `footprint` (x/z in metres), standing on the ground.
+static func building_model(parent: Node3D, file: String, footprint: Vector3, rot_y: float = 0.0) -> bool:
+	var m: Mesh = res("village/" + file)
+	if m == null:
+		return false
+	var a := m.get_aabb()
+	var k := maxf(footprint.x, footprint.z) / maxf(maxf(a.size.x, a.size.z), 0.001)
+	if footprint.y > 0.0:  # optional height cap
+		k = minf(k, footprint.y / maxf(a.size.y, 0.001))
+	var pivot := Node3D.new()
+	pivot.rotation_degrees.y = rot_y
+	parent.add_child(pivot)
+	var mi := MeshInstance3D.new()
+	mi.mesh = m
+	mi.scale = Vector3.ONE * k
+	mi.position = Vector3(-(a.position.x + a.size.x * 0.5) * k, -a.position.y * k, -(a.position.z + a.size.z * 0.5) * k)
+	_recolor(mi, "village/" + file, Color(0, 0, 0, 0))
+	pivot.add_child(mi)
+	return true
 
 static func box(parent: Node3D, size: Vector3, color: Color, pos: Vector3, rot := Vector3.ZERO) -> MeshInstance3D:
 	var mesh := _cached("box%s" % size, func(): return rounded_box(size))
@@ -154,17 +174,23 @@ static func house(parent: Node3D, wall: Color, roof: Color, w: float, d: float, 
 		box(parent, Vector3(0.75, 0.1, 0.1), Color.WHITE, Vector3(x, h * 0.62 - 0.35, d / 2 + 0.05))
 
 static func farmhouse(parent: Node3D) -> void:
+	if building_model(parent, "House_1.obj", Vector3(4.2, 0, 3.6), 0.0):
+		return
 	house(parent, Color("#fff3d6"), Color("#e2574c"), 3.6, 3.0, 2.2)
 	box(parent, Vector3(0.5, 1.2, 0.5), Color("#b9b2a8"), Vector3(1.0, 3.3, -0.4))  # chimney
 	box(parent, Vector3(1.6, 0.12, 0.9), Color("#c89b6d"), Vector3(0, 0.06, 1.95))  # porch
 
 static func barn(parent: Node3D) -> void:
+	if building_model(parent, "Stable.obj", Vector3(4.8, 0, 3.8), 0.0):
+		return
 	house(parent, Color("#c94b3b"), Color("#6e4a3a"), 4.0, 3.2, 2.8)
 	for x in [-0.45, 0.45]:
 		box(parent, Vector3(0.85, 1.9, 0.08), Color("#fff3d6"), Vector3(x, 0.95, 1.63))
 	box(parent, Vector3(0.12, 1.8, 0.1), Color.WHITE, Vector3(0, 0.95, 1.68), Vector3(0, 0, 25))
 
 static func coop(parent: Node3D) -> void:
+	if false:  # House_4 is roofless; keep the painted coop
+		return
 	box(parent, Vector3(1.8, 1.1, 1.4), Color("#f2c46d"), Vector3(0, 0.85, 0))
 	for x in [-0.8, 0.8]:
 		for z in [-0.6, 0.6]:
@@ -173,11 +199,15 @@ static func coop(parent: Node3D) -> void:
 	box(parent, Vector3(0.4, 0.4, 0.06), Color("#3a2a1a"), Vector3(0, 0.75, 0.72))
 
 static func warehouse(parent: Node3D) -> void:
+	if building_model(parent, "Blacksmith.obj", Vector3(3.6, 0, 3.0), 0.0):
+		return
 	house(parent, Color("#b98a5a"), Color("#5c7d4b"), 3.0, 2.4, 2.0)
 	for i in 3:
 		box(parent, Vector3(0.6, 0.6, 0.6), Color("#d9a85c"), Vector3(1.9, 0.3 + i * 0.0, -0.6 + i * 0.65))
 
 static func seed_shop(parent: Node3D) -> void:
+	if building_model(parent, "MarketStand_1.obj", Vector3(1.8, 1.9, 1.8), 90.0):
+		return
 	box(parent, Vector3(2.4, 0.9, 1.0), Color("#8bc34a"), Vector3(0, 0.45, 0))
 	for x in [-1.1, 1.1]:
 		cyl(parent, 0.07, 0.07, 2.2, Color("#7a4a2a"), Vector3(x, 1.1, -0.4))
@@ -189,6 +219,8 @@ static func seed_shop(parent: Node3D) -> void:
 		box(parent, Vector3(0.5, 0.3, 0.5), cols[i], Vector3(-0.7 + i * 0.7, 1.05, 0))
 
 static func market_stand(parent: Node3D) -> void:
+	if building_model(parent, "MarketStand_2.obj", Vector3(1.8, 1.9, 1.8), 90.0):
+		return
 	box(parent, Vector3(2.4, 0.9, 1.0), Color("#d08c4c"), Vector3(0, 0.45, 0))
 	for x in [-1.1, 1.1]:
 		cyl(parent, 0.07, 0.07, 2.2, Color("#7a4a2a"), Vector3(x, 1.1, -0.4))
@@ -198,6 +230,8 @@ static func market_stand(parent: Node3D) -> void:
 	sphere(parent, 0.35, Color("#ffd23f"), Vector3(0, 1.25, 0), Vector3(1, 0.4, 1))  # coin pile
 
 static func well(parent: Node3D) -> void:
+	if building_model(parent, "Well.obj", Vector3(1.9, 0, 1.9), 0.0):
+		return
 	cyl(parent, 0.8, 0.85, 0.8, Color("#a8a29a"), Vector3(0, 0.4, 0), Vector3.ZERO, 14)
 	cyl(parent, 0.68, 0.68, 0.05, Color("#4fb3e8", 0.9), Vector3(0, 0.75, 0), Vector3.ZERO, 14)
 	for x in [-0.75, 0.75]:
@@ -313,18 +347,28 @@ static func _model_crop(parent: Node3D, crop_id: String, stage: int) -> bool:
 # ------------------------------------------------------------ animals
 
 ## type -> [file, length in metres, yaw offset in degrees]
-const ANIMAL_MODELS := {"cow": ["animals/Cow.glb", 1.7, 0.0], "pig": ["animals/Pig.fbx", 1.15, 0.0], "sheep": ["animals/Sheep.fbx", 1.35, 0.0]}
+const ANIMAL_MODELS := {"chicken": ["animals/Chick.obj", 0.6, 0.0], "golden_hen": ["animals/Chick.obj", 0.7, 0.0], "cow": ["animals/Cow.glb", 1.7, 0.0], "pig": ["animals/Pig.fbx", 1.15, 0.0], "sheep": ["animals/Sheep.fbx", 1.35, 0.0]}
 
 static func _model_animal(parent: Node3D, type: String) -> Dictionary:
 	if not ANIMAL_MODELS.has(type):
 		return {}
 	var def: Array = ANIMAL_MODELS[type]
-	var ps: PackedScene = res(def[0])
-	if ps == null:
+	var r: Resource = res(def[0])
+	if r == null:
 		return {}
 	var body_root := Node3D.new()
 	parent.add_child(body_root)
-	var inst: Node3D = ps.instantiate()
+	var inst: Node3D
+	if r is Mesh:
+		inst = MeshInstance3D.new()
+		inst.mesh = r
+		_recolor(inst, def[0], Color(0, 0, 0, 0))
+		if type == "golden_hen":
+			for i in r.get_surface_count():
+				var c: Color = (inst.get_surface_override_material(i) as StandardMaterial3D).albedo_color
+				inst.set_surface_override_material(i, mat(c.lerp(Color("#ffc928"), 0.6)))
+	else:
+		inst = (r as PackedScene).instantiate()
 	body_root.add_child(inst)
 	inst.rotation_degrees.y = def[2]
 	# Normalise size: measure the mesh in world space and scale to the wanted length.
@@ -448,28 +492,34 @@ static func shadow_blob(parent: Node3D, r: float) -> void:
 
 # ------------------------------------------------------------ workshops
 
+const WORKSHOP_MODELS := {
+	"bakery": ["House_1.obj", "Barrel.obj"],
+	"dairy": ["Stable.obj", "Hay.obj"],
+	"juice_press": ["Blacksmith.obj", "Cart.obj"],
+	"jam_kitchen": ["Inn.obj", "Crate.obj"],
+}
+
 static func workshop(parent: Node3D, id: String) -> Node3D:
 	## Returns a node that may be animated (chimney smoke anchor / moving part) or null.
+	var spec: Array = WORKSHOP_MODELS.get(id, [])
+	if not spec.is_empty() and building_model(parent, spec[0], Vector3(3.2, 3.4, 3.2), 0.0):
+		var prop := Node3D.new()
+		prop.position = Vector3(1.9, 0, 1.0)
+		parent.add_child(prop)
+		building_model(prop, spec[1], Vector3(0.9, 0.9, 0.9), 20.0)
+		var anchor := Node3D.new()
+		anchor.position = Vector3(-0.6, 3.6, -0.3)
+		parent.add_child(anchor)
+		return anchor
 	match id:
 		"bakery":
 			house(parent, Color("#ffe7c2"), Color("#b5652b"), 3.0, 2.4, 2.0)
-			box(parent, Vector3(0.45, 1.0, 0.45), Color("#b9b2a8"), Vector3(-0.8, 2.9, -0.3))
-			sphere(parent, 0.35, Color("#e09a4a"), Vector3(0, 2.2, 1.3), Vector3(1.3, 0.8, 0.5))  # bread sign
 		"dairy":
 			house(parent, Color("#f4fbff"), Color("#4f8fd6"), 3.0, 2.4, 2.0)
-			box(parent, Vector3(0.45, 1.0, 0.45), Color("#b9b2a8"), Vector3(-0.8, 2.9, -0.3))
-			for x in [1.75, 2.05]:
-				cyl(parent, 0.16, 0.2, 0.6, Color("#d9e2ea"), Vector3(x, 0.3, 0.6), Vector3.ZERO, 8)
 		"juice_press":
 			house(parent, Color("#e6f7c8"), Color("#f08a24"), 3.0, 2.4, 2.0)
-			box(parent, Vector3(0.45, 1.0, 0.45), Color("#b9b2a8"), Vector3(-0.8, 2.9, -0.3))
-			for z in [-0.3, 0.4]:
-				cyl(parent, 0.32, 0.32, 0.8, Color("#a0663a"), Vector3(1.9, 0.4, z), Vector3.ZERO, 10)
 		"jam_kitchen":
 			house(parent, Color("#ffe1ec"), Color("#9b5de5"), 3.0, 2.4, 2.0)
-			box(parent, Vector3(0.45, 1.0, 0.45), Color("#b9b2a8"), Vector3(-0.8, 2.9, -0.3))
-			for i in 3:
-				cyl(parent, 0.12, 0.12, 0.28, Color("#e8384f"), Vector3(-0.5 + i * 0.5, 1.25, 1.25), Vector3.ZERO, 8)
 	var smoke := Node3D.new()
 	smoke.position = Vector3(-0.8, 3.5, -0.3)
 	parent.add_child(smoke)
@@ -519,6 +569,8 @@ static func decoration(parent: Node3D, id: String) -> Node3D:
 			prism(parent, Vector3(0.6, 0.3, 0.55), Color("#e2574c"), Vector3(0, 2.17, 0))
 			sphere(parent, 0.07, Color("#3a2a1a"), Vector3(0, 1.85, 0.23), Vector3(1, 1, 0.3))
 		"windmill":
+			if building_model(parent, "Mill.obj", Vector3(3.2, 0, 3.2)):
+				return null
 			cyl(parent, 0.7, 1.1, 4.0, Color("#fff3d6"), Vector3(0, 2.0, 0), Vector3.ZERO, 8)
 			cyl(parent, 0.05, 0.9, 0.9, Color("#e2574c"), Vector3(0, 4.45, 0), Vector3.ZERO, 8)
 			var hub := Node3D.new()
