@@ -6,11 +6,15 @@ const SAVE_PATH := "user://farm_save.json"
 const BACKUP_PATH := "user://farm_save.bak.json"
 const SETTINGS_PATH := "user://settings.json"
 
-var settings: Dictionary = {"music": 0.6, "sfx": 0.8, "language": ""}
+var settings: Dictionary = {"music": 0.0, "sfx": 0.8, "language": ""}
 var _timer: Timer
 
 func _ready() -> void:
 	load_settings()
+	# v2: the old synthesized music was switched on by default; start everyone with it off.
+	if not settings.has("music_v2"):
+		settings["music"] = 0.0
+		settings["music_v2"] = true
 	Localization.set_language(settings.get("language", ""))
 	Audio.set_volumes(float(settings["music"]), float(settings["sfx"]))
 	load_game()

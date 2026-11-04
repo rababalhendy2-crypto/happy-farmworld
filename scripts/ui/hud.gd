@@ -182,7 +182,8 @@ func _build_top_bar() -> void:
 	hb.add_child(settings)
 	_blockers.append(lvl_box)
 	lvl_box.gui_input.connect(func(ev):
-		if (ev is InputEventMouseButton and ev.pressed) or (ev is InputEventScreenTouch and ev.pressed):
+		# Touch arrives here as an emulated mouse click (emulate_mouse_from_touch), so one branch only.
+		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
 			Audio.play("click")
 			open_profile())
 	_blockers.append(settings)
