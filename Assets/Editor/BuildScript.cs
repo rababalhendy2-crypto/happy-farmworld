@@ -80,18 +80,20 @@ namespace FarmWorld.EditorTools
                 m.renderQueue = (int)RenderQueue.Transparent;
             });
 
-            // Keep the Lit shader in every build even if nothing references it directly.
+            // Do NOT put URP Lit into "Always Included Shaders": that compiles every variant
+            // (~590k, hours on CI). The three material assets above already reference Lit, so the
+            // build keeps exactly the variants they use. Remove it if an older build added it.
             var gs = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>("ProjectSettings/GraphicsSettings.asset");
             var so = new SerializedObject(gs);
             var arr = so.FindProperty("m_AlwaysIncludedShaders");
-            bool present = false;
-            for (int i = 0; i < arr.arraySize; i++) if (arr.GetArrayElementAtIndex(i).objectReferenceValue == lit) present = true;
-            if (!present)
+            for (int i = arr.arraySize - 1; i >= 0; i--)
             {
-                arr.InsertArrayElementAtIndex(arr.arraySize);
-                arr.GetArrayElementAtIndex(arr.arraySize - 1).objectReferenceValue = lit;
-                so.ApplyModifiedProperties();
+                var el = arr.GetArrayElementAtIndex(i);
+                if (el.objectReferenceValue != lit) continue;
+                el.objectReferenceValue = null;          // first clear, then remove the empty slot
+                arr.DeleteArrayElementAtIndex(i);
             }
+            so.ApplyModifiedProperties();
         }
 
         static void Make(string name, Shader shader, Action<Material> setup)
