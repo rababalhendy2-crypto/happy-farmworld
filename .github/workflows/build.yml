@@ -39,25 +39,30 @@ jobs:
       - name: Build with Unity 6 (full log kept)
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         run: |
           set -o pipefail
           mkdir -p build lic
           printf '%s' "$UNITY_LICENSE" > lic/Unity_lic.ulf
           echo "licence bytes: $(wc -c < lic/Unity_lic.ulf)"
           if [ "${{ matrix.target }}" = "Android" ]; then OUT=build/Android/FarmWorld.apk; else OUT=build/WebGL/FarmWorld; fi
-          { echo "licence bytes: $(wc -c < lic/Unity_lic.ulf)"; head -c 60 lic/Unity_lic.ulf | tr -d '\r'; echo; grep -o '<License id="[^"]*"' lic/Unity_lic.ulf | head -1; } > build-${{ matrix.target }}.log
+          { echo "credentials present: email=$([ -n "$UNITY_EMAIL" ] && echo yes || echo no) password=$([ -n "$UNITY_PASSWORD" ] && echo yes || echo no)"; echo "licence bytes: $(wc -c < lic/Unity_lic.ulf)"; head -c 60 lic/Unity_lic.ulf | tr -d '\r'; echo; grep -o '<License id="[^"]*"' lic/Unity_lic.ulf | head -1; } > build-${{ matrix.target }}.log
           docker run --rm \
             -v "$PWD":/project -w /project \
             -v "$PWD/lic":/lic:ro \
+            -e UNITY_EMAIL -e UNITY_PASSWORD \
             ${{ matrix.image }} \
             bash -c "mkdir -p /root/.local/share/unity3d/Unity /root/.cache/unity3d && \
               cp /lic/Unity_lic.ulf /root/.local/share/unity3d/Unity/Unity_lic.ulf && \
               echo '--- activating licence file' && \
               (unity-editor -nographics -logFile - -quit -manualLicenseFile /root/.local/share/unity3d/Unity/Unity_lic.ulf || true) && \
+              echo '--- signing in to Unity' && \
+              (unity-editor -nographics -logFile - -quit -username \"\$UNITY_EMAIL\" -password \"\$UNITY_PASSWORD\" || true) && \
               echo '--- building' && \
-              unity-editor -nographics -logFile - -projectPath /project -buildTarget ${{ matrix.target }} \
+              unity-editor -nographics -logFile - -username \"\$UNITY_EMAIL\" -password \"\$UNITY_PASSWORD\" -projectPath /project -buildTarget ${{ matrix.target }} \
               -executeMethod FarmWorld.EditorTools.BuildScript.BuildFromCommandLine -customBuildPath /project/$OUT" \
-            2>&1 | tee -a build-${{ matrix.target }}.log
+            2>&1 | python3 .github/scripts/redact.py | tee -a build-${{ matrix.target }}.log
           rm -rf lic
           sudo chown -R "$(id -u)":"$(id -g)" build Library || true
           ls -laR build | head -40
