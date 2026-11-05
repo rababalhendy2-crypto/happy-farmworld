@@ -1,5 +1,5 @@
 name: Build Farm World
-# Personal licence: signs in with UNITY_EMAIL/UNITY_PASSWORD (account must have a password, not Google-only).
+# Personal licence: activated per run with the Unity Licensing Client (UNITY_EMAIL/UNITY_PASSWORD) and returned afterwards.
 
 on:
   push:
@@ -55,14 +55,14 @@ jobs:
             -e UNITY_EMAIL -e UNITY_PASSWORD \
             ${{ matrix.image }} \
             bash -c "mkdir -p /root/.local/share/unity3d/Unity /root/.cache/unity3d && \
-              cp /lic/Unity_lic.ulf /root/.local/share/unity3d/Unity/Unity_lic.ulf && \
-              echo '--- activating licence file' && \
-              (unity-editor -nographics -logFile - -quit -manualLicenseFile /root/.local/share/unity3d/Unity/Unity_lic.ulf || true) && \
-              echo '--- signing in to Unity' && \
-              (unity-editor -nographics -logFile - -quit -username \"\$UNITY_EMAIL\" -password \"\$UNITY_PASSWORD\" || true) && \
+              LC=/opt/unity/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client && \
+              echo '--- activating personal licence on this machine' && \
+              (\$LC --activate-all --include-personal --username \"\$UNITY_EMAIL\" --password \"\$UNITY_PASSWORD\" || true) && \
+              (\$LC --showEntitlements | grep -iE 'id|personal|headless' | head -20 || true) && \
               echo '--- building' && \
               unity-editor -nographics -logFile - -username \"\$UNITY_EMAIL\" -password \"\$UNITY_PASSWORD\" -projectPath /project -buildTarget ${{ matrix.target }} \
-              -executeMethod FarmWorld.EditorTools.BuildScript.BuildFromCommandLine -customBuildPath /project/$OUT" \
+              -executeMethod FarmWorld.EditorTools.BuildScript.BuildFromCommandLine -customBuildPath /project/$OUT; \
+              rc=\$?; echo '--- returning licence'; \$LC --deactivate-all --username \"\$UNITY_EMAIL\" --password \"\$UNITY_PASSWORD\" >/dev/null 2>&1 || true; exit \$rc" \
             2>&1 | python3 .github/scripts/redact.py | tee -a build-${{ matrix.target }}.log
           rm -rf lic
           sudo chown -R "$(id -u)":"$(id -g)" build Library || true
