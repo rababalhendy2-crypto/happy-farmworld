@@ -317,6 +317,7 @@ namespace FarmWorld.UI
             CloseSeeds();
             _storageWindow.gameObject.SetActive(true);
             _storageWindow.SetAsLastSibling();
+            _toastGroup.transform.SetAsLastSibling();
             FillStorage();
         }
 
@@ -467,6 +468,7 @@ namespace FarmWorld.UI
             t.font = _font; t.fontSize = size; t.alignment = align; t.color = color; t.text = text;
             t.raycastTarget = false;
             t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            t.verticalOverflow = VerticalWrapMode.Overflow;
             return t;
         }
 

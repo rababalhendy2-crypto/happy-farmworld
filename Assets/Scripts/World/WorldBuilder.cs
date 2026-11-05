@@ -179,7 +179,7 @@ namespace FarmWorld.World
             Fence(pen, Hex("#f4efe6"));
             Prim(PrimitiveType.Cube, _static, new Vector3(16f, 0.25f, -3.5f), new Vector3(0.6f, 0.5f, 2.2f), Hex("#8a5a36"));
             Prim(PrimitiveType.Cube, _static, new Vector3(16f, 0.47f, -3.5f), new Vector3(0.45f, 0.06f, 2.0f), Hex("#5cc3f0"));
-            ModelLibrary.Spawn("Village/Hay.obj", _static, new Vector3(9.4f, 0, -10f), 1.6f, Fit.Footprint, 25f);
+            ModelLibrary.Spawn("Village/Hay.obj", _static, new Vector3(9.4f, 0, -10f), 1.0f, Fit.Height, 25f);
             Animal("Animals/Cow", new Vector3(11f, 0, -5f), 2.0f, pen, "animal_cow");
             Animal("Animals/Cow", new Vector3(14f, 0, -8f), 2.0f, pen, "animal_cow");
             Animal("Animals/Sheep", new Vector3(10f, 0, -9f), 1.3f, pen, "animal_sheep");
@@ -205,8 +205,8 @@ namespace FarmWorld.World
         {
             var root = new GameObject("Field_" + index); root.transform.SetParent(_static, false); root.transform.localPosition = pos;
             Prim(PrimitiveType.Cube, root.transform, new Vector3(0, 0.12f, 0), new Vector3(4f, 0.24f, 3.8f), Hex("#7a4b2c"));
-            for (int r = 0; r < 4; r++)
-                Prim(PrimitiveType.Cube, root.transform, new Vector3(0, 0.26f, -1.35f + r * 0.9f), new Vector3(3.6f, 0.08f, 0.42f), Hex("#5e3720"));
+            for (int r = 0; r < Farming.FieldPlot.Rows; r++)
+                Prim(PrimitiveType.Cube, root.transform, new Vector3(0, 0.27f, Farming.FieldPlot.RowZ(r)), new Vector3(3.6f, 0.08f, 0.4f), Hex("#5e3720"));
             var sel = Selectable.Make(root, "field_" + index, "field", "field");
             // The collider must also cover tall crops planted later.
             var col = root.GetComponent<BoxCollider>();

@@ -51,43 +51,40 @@ namespace FarmWorld.Farming
             _plants = new GameObject("Plants").transform;
             _plants.SetParent(transform, false);
             string m = crop.Model;
-            float h = m == "Corn" ? 1.4f : m == "Wheat" ? 0.95f : m == "Tomato" ? 0.9f : 0.5f;
+            // Planting grid matches the five soil ridges built by WorldBuilder.BuildField.
+            float h = m == "Corn" ? 1.5f : m == "Wheat" ? 0.85f : m == "Tomato" ? 0.95f : m == "Pumpkin" ? 0.55f : 0.5f;
             h *= 0.35f + 0.65f * stage / 4f;
-            int per = m == "Pumpkin" ? 2 : 4;
+            int perRow = m == "Pumpkin" ? 3 : m == "Wheat" ? 9 : 6;
+            int tuft = m == "Wheat" ? 3 : 1;                 // wheat stalks are thin: plant small clumps
+            float thick = m == "Wheat" ? 1.8f : m == "Corn" ? 1.25f : 1.15f;
+            Color? ripeTint = stage == 4 && m == "Wheat" ? new Color(1.35f, 1.2f, 0.8f) : (Color?)null;
             var rnd = new System.Random(Index * 97 + stage);
             float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
-            for (int r = 0; r < 4; r++)
-                for (int k = 0; k < per; k++)
-                {
-                    float x = per == 2 ? -0.8f + k * 1.6f : -1.35f + k * 0.9f;
-                    ModelLibrary.Spawn("Crops/" + m + "_" + stage + ".obj", _plants,
-                        new Vector3(x + R(-0.08f, 0.08f), 0.28f, -1.35f + r * 0.9f), h * R(0.9f, 1.08f),
-                        ModelLibrary.Fit.Height, R(0, 360), null, r == 0 || stage >= 3);
-                }
-
-            // Ripe crops sway gently in place; nothing floats above the field.
-            if (stage == 4)
-                foreach (Transform plant in _plants) plant.gameObject.AddComponent<World.WindSway>();
-        }
-
-        /// <summary>Short squash-and-stretch so planting, ripening and harvesting feel responsive.</summary>
-        public void Pop()
-        {
-            StopAllCoroutines();
-            StartCoroutine(PopRoutine());
-        }
-
-        System.Collections.IEnumerator PopRoutine()
-        {
-            float t = 0;
-            while (t < 0.35f && _plants != null)
+            for (int r = 0; r < Rows; r++)
             {
-                t += Time.deltaTime;
-                float k = 1f + Mathf.Sin(t / 0.35f * Mathf.PI) * 0.18f;
-                _plants.localScale = new Vector3(2f - k, k, 2f - k);
-                yield return null;
+                float z = RowZ(r);
+                for (int k = 0; k < perRow; k++)
+                {
+                    float x = -1.6f + (k + 0.5f) * 3.2f / perRow;
+                    for (int t = 0; t < tuft; t++)
+                    {
+                        var p = new Vector3(x + R(-0.09f, 0.09f), 0.3f, z + R(-0.07f, 0.07f));
+                        var plant = ModelLibrary.Spawn("Crops/" + m + "_" + stage + ".obj", _plants, p, h * R(0.85f, 1.1f),
+                            ModelLibrary.Fit.Height, R(0, 360), ripeTint, stage >= 3 && t == 0);
+                        if (plant == null) continue;
+                        plant.transform.localScale = new Vector3(thick, 1f, thick);
+                        if (tuft > 1) plant.transform.localRotation *= Quaternion.Euler(R(-8f, 8f), 0, R(-8f, 8f));
+                    }
+                }
             }
-            if (_plants != null) _plants.localScale = Vector3.one;
+            // Hundreds of small meshes per field: merge them into a few draw calls for phones.
+            StaticBatchingUtility.Combine(_plants.gameObject);
         }
+
+        public const int Rows = 5;
+        public static float RowZ(int r) => -1.5f + r * 0.75f;
+
+        /// <summary>Kept for callers; plants are static-batched, so feedback comes from the floating label instead.</summary>
+        public void Pop() { }
     }
 }

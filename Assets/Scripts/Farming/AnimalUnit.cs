@@ -23,7 +23,7 @@ namespace FarmWorld.Farming
         {
             // Small animals (chicks) get a bigger tap area so they are easy to hit with a finger.
             var col = GetComponent<BoxCollider>();
-            if (col != null) col.size = Vector3.Max(col.size, new Vector3(1.3f, 1.3f, 1.3f));
+            if (col != null) col.size = Vector3.Max(col.size * 1.3f, new Vector3(1.6f, 1.4f, 1.6f));
             Refresh(true);
         }
 
@@ -50,9 +50,14 @@ namespace FarmWorld.Farming
             var side = transform.right * (Height * 0.45f + 0.25f);
             _marker.position = p + new Vector3(side.x, 0f, side.z);
             _marker.rotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
-            ProductIcon(_marker, GameConfig.AnimalById.TryGetValue(Type, out var d) ? d.Product : "egg");
+            // Straw nest under the product so it reads as "something to pick up" from the iso camera.
+            var nest = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            Prep(nest, _marker, new Vector3(0, 0.03f, 0), new Vector3(0.95f, 0.03f, 0.95f), new Color(0.86f, 0.72f, 0.38f));
+            var icon = new GameObject("Icon").transform; icon.SetParent(_marker, false);
+            icon.localPosition = new Vector3(0, 0.05f, 0); icon.localScale = Vector3.one * 1.9f;
+            ProductIcon(icon, GameConfig.AnimalById.TryGetValue(Type, out var d) ? d.Product : "egg");
             var col = _marker.gameObject.AddComponent<BoxCollider>();
-            col.center = new Vector3(0, 0.3f, 0); col.size = new Vector3(1.1f, 0.8f, 1.1f);
+            col.center = new Vector3(0, 0.4f, 0); col.size = new Vector3(1.4f, 1.0f, 1.4f);
             var sel = _marker.gameObject.AddComponent<World.Selectable>();
             sel.Id = Id + "_product"; sel.Kind = "product"; sel.TitleKey = GetComponent<World.Selectable>()?.TitleKey;
             _marker.gameObject.AddComponent<ProductDrop>().Unit = this;
