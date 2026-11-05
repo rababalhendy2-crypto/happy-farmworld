@@ -60,9 +60,9 @@ jobs:
               date -u; (timeout -k 10 240 \$LC --activate-all --include-personal --username \"\$UNITY_EMAIL\" --password \"\$UNITY_PASSWORD\" || true) && \
               date -u; (timeout -k 10 120 \$LC --showEntitlements | grep -iE 'id|personal|headless' | head -20 || true) && \
               echo '--- building' && \
-              date -u; timeout -k 30 80m unity-editor -nographics -logFile - -username \"\$UNITY_EMAIL\" -password \"\$UNITY_PASSWORD\" -projectPath /project -buildTarget ${{ matrix.target }} \
+              date -u; timeout -k 30 50m unity-editor -nographics -logFile - -username \"\$UNITY_EMAIL\" -password \"\$UNITY_PASSWORD\" -projectPath /project -buildTarget ${{ matrix.target }} \
               -executeMethod FarmWorld.EditorTools.BuildScript.BuildFromCommandLine -customBuildPath /project/$OUT; \
-              rc=\$?; date -u; echo \"--- unity exit code \$rc (124 = stopped after 80 min)\"; echo '--- returning licence'; timeout -k 10 120 \$LC --deactivate-all --username \"\$UNITY_EMAIL\" --password \"\$UNITY_PASSWORD\" >/dev/null 2>&1 || true; exit \$rc" \
+              rc=\$?; date -u; echo \"--- unity exit code \$rc (124 = stopped after 50 min)\"; echo '--- returning licence'; timeout -k 10 120 \$LC --deactivate-all --username \"\$UNITY_EMAIL\" --password \"\$UNITY_PASSWORD\" >/dev/null 2>&1 || true; exit \$rc" \
             2>&1 | python3 .github/scripts/redact.py | tee -a build-${{ matrix.target }}.log
           rm -rf lic
           sudo chown -R "$(id -u)":"$(id -g)" build Library || true
@@ -95,16 +95,17 @@ jobs:
         run: |
           rm -rf lic
           mkdir -p /tmp/log
-          LOG=build-${{ matrix.target }}.log
+          LOG=$GITHUB_WORKSPACE/build-${{ matrix.target }}.log
+          sudo chown "$(id -u)" "$LOG" 2>/dev/null || true
           [ -f "$LOG" ] || echo "no log" > "$LOG"
           grep -nE "error|Error|ERROR|Exception|Failed|failed|\[Build\]|licence bytes|License id|^---|xml|activat|Activat" "$LOG" | grep -v "^.*warning" | head -500 > /tmp/log/errors-${{ matrix.target }}.log || true
           tail -n 3000 "$LOG" > /tmp/log/tail-${{ matrix.target }}.log
           echo "${{ job.status }} run ${GITHUB_RUN_ID} sha ${GITHUB_SHA}" > /tmp/log/status-${{ matrix.target }}.txt
+          sudo chown -R "$(id -u)":"$(id -g)" . || true
+          BR=ci-logs-${{ matrix.target }}
+          cd /tmp/log
+          git init -q && git checkout -q -b logtmp
           git config user.name "farm-world-ci"
           git config user.email "ci@users.noreply.github.com"
-          BR=ci-logs-${{ matrix.target }}
-          git checkout -q --orphan logtmp
-          git rm -rf -q . || true
-          cp /tmp/log/* .
           git add -A && git commit -qm "log ${{ matrix.target }} ${GITHUB_SHA::7} ${{ job.status }}"
-          git push -f origin HEAD:$BR
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:$BR
