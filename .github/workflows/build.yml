@@ -76,10 +76,13 @@ jobs:
           if [ "$HEAD_SHA" != "$GITHUB_SHA" ]; then echo "A newer commit is on ${GITHUB_REF_NAME}; not publishing this older build."; exit 0; fi
           git config user.name "farm-world-ci"
           git config user.email "ci@users.noreply.github.com"
-          git fetch origin builds:builds
-          for attempt in 1 2 3 4 5; do
+          # Android and WebGL publish at the same time: retry on a fresh copy of the branch.
+          # (Detached worktree, so fetching never touches a checked-out branch.)
+          for attempt in 1 2 3 4 5 6; do
+            cd "$GITHUB_WORKSPACE"
             rm -rf /tmp/wt; git worktree prune
-            git worktree add /tmp/wt builds
+            git fetch -q origin builds
+            git worktree add -q --detach /tmp/wt FETCH_HEAD
             if [ "${{ matrix.target }}" = "Android" ]; then
               cp build/Android/FarmWorld.apk /tmp/wt/FarmWorld-Unity.apk
             else
@@ -88,9 +91,10 @@ jobs:
             cd /tmp/wt
             echo "${{ matrix.target }} ${GITHUB_SHA::7} $(date -u +%FT%TZ)" >> BUILDS.log
             git add -A && git commit -qm "CI: ${{ matrix.target }} build of ${GITHUB_SHA::7}"
-            if git push origin HEAD:builds; then break; fi
-            cd "$GITHUB_WORKSPACE"; git fetch origin builds:builds --force; sleep $((attempt * 7))
+            if git push origin HEAD:builds; then echo "published"; exit 0; fi
+            sleep $((attempt * 9))
           done
+          echo "could not publish after 6 attempts"; exit 1
 
       - name: Save log to ci-logs branch
         if: always()
