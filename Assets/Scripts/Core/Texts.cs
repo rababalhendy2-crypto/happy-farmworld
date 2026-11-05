@@ -17,6 +17,14 @@ namespace FarmWorld.Core
             { "field", "Field" }, { "animal_cow", "Cow" }, { "animal_sheep", "Sheep" }, { "animal_chicken", "Chicken" },
             { "zone_village", "Village" }, { "zone_market", "Market" }, { "zone_forest_lake", "Forest & lake" },
             { "zone_production", "Production area" }, { "zone_expansion", "Locked land – unlocks as you level up" },
+            { "wheat", "Wheat" }, { "carrot", "Carrot" }, { "tomato", "Tomato" }, { "corn", "Corn" }, { "pumpkin", "Pumpkin" },
+            { "strawberry", "Strawberry" }, { "egg", "Egg" }, { "milk", "Milk" }, { "wool", "Wool" },
+            { "ui_choose_seed", "Choose a seed to plant" }, { "ui_level", "Level {0}" }, { "ui_locked", "Level {0}" },
+            { "ui_storage", "Storage" }, { "ui_storage_count", "Storage {0}/{1}" }, { "ui_sell_all", "Sell all" },
+            { "ui_empty_storage", "Storage is empty. Harvest crops to fill it." }, { "ui_close", "Close" },
+            { "ui_not_enough_coins", "Not enough coins" }, { "ui_storage_full", "Storage is full – sell something first" },
+            { "ui_growing", "{0} – ready in {1}" }, { "ui_planted", "{0} planted" }, { "ui_harvested", "+{0} {1}" },
+            { "ui_sold", "+{0} coins" }, { "ui_level_up", "Level {0}! +{1} coins" }, { "ui_needs_level", "Unlocks at level {0}" },
         };
 
         public static string Get(string key) => key != null && En.TryGetValue(key, out var v) ? v : key ?? "";

@@ -31,7 +31,10 @@ namespace FarmWorld.Core
         public static GameObject Prefab(string path)
         {
             if (Prefabs.TryGetValue(path, out var p)) return p;
-            p = Resources.Load<GameObject>("Models/" + path);
+            // Resources.Load paths must not carry the file extension ("House_1.obj" -> "House_1").
+            string ext = System.IO.Path.GetExtension(path);
+            string key = ext.Length > 0 ? path.Substring(0, path.Length - ext.Length) : path;
+            p = Resources.Load<GameObject>("Models/" + key);
             if (p == null) Debug.LogWarning("[ModelLibrary] missing model " + path);
             Prefabs[path] = p;
             return p;

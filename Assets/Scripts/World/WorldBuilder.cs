@@ -14,6 +14,7 @@ namespace FarmWorld.World
     {
         public Rect PlayableBounds => new Rect(-42f, -40f, 84f, 82f);
         public Vector3 FarmCenter => new Vector3(0f, 0f, 0f);
+        public readonly List<Selectable> Fields = new();
 
         public static readonly Dictionary<string, Vector3> ZoneCenters = new()
         {
@@ -166,13 +167,11 @@ namespace FarmWorld.World
             BuildCoop(new Vector3(-12f, 0, -4f));
             BuildSilo(new Vector3(13.5f, 0, 9.5f));
 
-            // Six starter fields (design doc MVP: five crops) in a 3 × 2 grid with crops at mixed stages.
-            string[] crops = { "Wheat", "Carrot", "Corn", "Tomato", "Pumpkin", "Wheat" };
-            int[] stages = { 4, 3, 4, 2, 4, 1 };
+            // Six starter fields in a 3 × 2 grid. What grows on them comes from the save (Farming.FieldPlot).
             for (int i = 0; i < 6; i++)
             {
                 var p = new Vector3(-4.6f + (i % 3) * 4.6f, 0, -1.5f - (i / 3) * 4.4f);
-                BuildField(i, p, crops[i], stages[i]);
+                BuildField(i, p);
             }
 
             // Animal pen east of the fields
@@ -202,23 +201,18 @@ namespace FarmWorld.World
             Fence(new Rect(-17.5f, -14f, 35f, 27f), Hex("#a87a4f"), 4.5f);
         }
 
-        void BuildField(int index, Vector3 pos, string crop, int stage)
+        void BuildField(int index, Vector3 pos)
         {
             var root = new GameObject("Field_" + index); root.transform.SetParent(_static, false); root.transform.localPosition = pos;
             Prim(PrimitiveType.Cube, root.transform, new Vector3(0, 0.12f, 0), new Vector3(4f, 0.24f, 3.8f), Hex("#7a4b2c"));
             for (int r = 0; r < 4; r++)
                 Prim(PrimitiveType.Cube, root.transform, new Vector3(0, 0.26f, -1.35f + r * 0.9f), new Vector3(3.6f, 0.08f, 0.42f), Hex("#5e3720"));
-            float h = crop == "Corn" ? 1.4f : crop == "Wheat" ? 0.95f : crop == "Tomato" ? 0.9f : 0.5f;
-            h *= 0.35f + 0.65f * stage / 4f;
-            int per = crop == "Pumpkin" ? 2 : 4;
-            for (int r = 0; r < 4; r++)
-                for (int k = 0; k < per; k++)
-                {
-                    float x = per == 2 ? -0.8f + k * 1.6f : -1.35f + k * 0.9f;
-                    ModelLibrary.Spawn("Crops/" + crop + "_" + stage + ".obj", root.transform,
-                        new Vector3(x + R(-0.08f, 0.08f), 0.28f, -1.35f + r * 0.9f), h * R(0.9f, 1.08f), Fit.Height, R(0, 360));
-                }
-            Selectable.Make(root, "field_" + index, "field", "field");
+            var sel = Selectable.Make(root, "field_" + index, "field", "field");
+            // The collider must also cover tall crops planted later.
+            var col = root.GetComponent<BoxCollider>();
+            col.center = new Vector3(0, 0.9f, 0); col.size = new Vector3(4.2f, 1.8f, 4.0f);
+            root.AddComponent<Farming.FieldPlot>().Index = index;
+            Fields.Add(sel);
         }
 
         void BuildCoop(Vector3 p)

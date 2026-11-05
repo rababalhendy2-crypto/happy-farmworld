@@ -8,7 +8,7 @@ namespace FarmWorld.Core
     /// </summary>
     public static class Bootstrap
     {
-        public const string Version = "0.1.0";
+        public const string Version = "0.2.0";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Init()
@@ -33,6 +33,7 @@ namespace FarmWorld.Core
             QualitySettings.vSyncCount = 0;
             Screen.sleepTimeout = SleepTimeout.SystemSetting;
 
+            gameObject.AddComponent<GameState>();
             var sun = World_CreateSun();
             World = new GameObject("World").AddComponent<World.WorldBuilder>();
             World.Build();
@@ -44,7 +45,7 @@ namespace FarmWorld.Core
             CameraRig.Bounds = World.PlayableBounds;
             CameraRig.FocusImmediate(World.FarmCenter);
 
-            new GameObject("Hud").AddComponent<UI.DebugHud>();
+            new GameObject("Hud").AddComponent<UI.GameHud>();
         }
 
         static Light World_CreateSun()
