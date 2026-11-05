@@ -14,7 +14,7 @@ jobs:
   build:
     name: ${{ matrix.target }}
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 115
     strategy:
       fail-fast: false
       matrix:
@@ -57,12 +57,12 @@ jobs:
             bash -c "mkdir -p /root/.local/share/unity3d/Unity /root/.cache/unity3d && \
               LC=/opt/unity/Editor/Data/Resources/Licensing/Client/Unity.Licensing.Client && \
               echo '--- activating personal licence on this machine' && \
-              (\$LC --activate-all --include-personal --username \"\$UNITY_EMAIL\" --password \"\$UNITY_PASSWORD\" || true) && \
-              (\$LC --showEntitlements | grep -iE 'id|personal|headless' | head -20 || true) && \
+              date -u; (timeout -k 10 240 \$LC --activate-all --include-personal --username \"\$UNITY_EMAIL\" --password \"\$UNITY_PASSWORD\" || true) && \
+              date -u; (timeout -k 10 120 \$LC --showEntitlements | grep -iE 'id|personal|headless' | head -20 || true) && \
               echo '--- building' && \
-              unity-editor -nographics -logFile - -username \"\$UNITY_EMAIL\" -password \"\$UNITY_PASSWORD\" -projectPath /project -buildTarget ${{ matrix.target }} \
+              date -u; timeout -k 30 80m unity-editor -nographics -logFile - -username \"\$UNITY_EMAIL\" -password \"\$UNITY_PASSWORD\" -projectPath /project -buildTarget ${{ matrix.target }} \
               -executeMethod FarmWorld.EditorTools.BuildScript.BuildFromCommandLine -customBuildPath /project/$OUT; \
-              rc=\$?; echo '--- returning licence'; \$LC --deactivate-all --username \"\$UNITY_EMAIL\" --password \"\$UNITY_PASSWORD\" >/dev/null 2>&1 || true; exit \$rc" \
+              rc=\$?; date -u; echo \"--- unity exit code \$rc (124 = stopped after 80 min)\"; echo '--- returning licence'; timeout -k 10 120 \$LC --deactivate-all --username \"\$UNITY_EMAIL\" --password \"\$UNITY_PASSWORD\" >/dev/null 2>&1 || true; exit \$rc" \
             2>&1 | python3 .github/scripts/redact.py | tee -a build-${{ matrix.target }}.log
           rm -rf lic
           sudo chown -R "$(id -u)":"$(id -g)" build Library || true
