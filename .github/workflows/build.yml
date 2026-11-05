@@ -99,7 +99,13 @@ jobs:
           gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs" > /tmp/log/jobs.json || true
           for id in $(jq -r '.jobs[] | select(.conclusion=="failure") | .id' /tmp/log/jobs.json); do
             name=$(jq -r ".jobs[] | select(.id==$id) | .name" /tmp/log/jobs.json)
-            gh api "repos/${GITHUB_REPOSITORY}/actions/jobs/$id/logs" > "/tmp/log/full-$name.log" || true
+            for t in 1 2 3 4 5 6; do
+              curl -sSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/jobs/$id/logs" -o "/tmp/log/full-$name.log" || true
+              [ -s "/tmp/log/full-$name.log" ] && break
+              sleep 20
+            done
+            ls -la /tmp/log
             grep -nE "error|Error|ERROR|exception|Exception|failed|Failed" "/tmp/log/full-$name.log" | head -400 > "/tmp/log/errors-$name.log" || true
             tail -n 2500 "/tmp/log/full-$name.log" > "/tmp/log/tail-$name.log"
             rm -f "/tmp/log/full-$name.log"
