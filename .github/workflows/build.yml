@@ -45,13 +45,19 @@ jobs:
           printf '%s' "$UNITY_LICENSE" > lic/Unity_lic.ulf
           echo "licence bytes: $(wc -c < lic/Unity_lic.ulf)"
           if [ "${{ matrix.target }}" = "Android" ]; then OUT=build/Android/FarmWorld.apk; else OUT=build/WebGL/FarmWorld; fi
+          { echo "licence bytes: $(wc -c < lic/Unity_lic.ulf)"; head -c 60 lic/Unity_lic.ulf | tr -d '\r'; echo; grep -o '<License id="[^"]*"' lic/Unity_lic.ulf | head -1; } > build-${{ matrix.target }}.log
           docker run --rm \
             -v "$PWD":/project -w /project \
-            -v "$PWD/lic/Unity_lic.ulf":/root/.local/share/unity3d/Unity/Unity_lic.ulf:ro \
+            -v "$PWD/lic":/lic:ro \
             ${{ matrix.image }} \
-            bash -c "unity-editor -nographics -logFile - -projectPath /project -buildTarget ${{ matrix.target }} \
+            bash -c "mkdir -p /root/.local/share/unity3d/Unity /root/.cache/unity3d && \
+              cp /lic/Unity_lic.ulf /root/.local/share/unity3d/Unity/Unity_lic.ulf && \
+              echo '--- activating licence file' && \
+              (unity-editor -nographics -logFile - -quit -manualLicenseFile /root/.local/share/unity3d/Unity/Unity_lic.ulf || true) && \
+              echo '--- building' && \
+              unity-editor -nographics -logFile - -projectPath /project -buildTarget ${{ matrix.target }} \
               -executeMethod FarmWorld.EditorTools.BuildScript.BuildFromCommandLine -customBuildPath /project/$OUT" \
-            2>&1 | tee build-${{ matrix.target }}.log
+            2>&1 | tee -a build-${{ matrix.target }}.log
           rm -rf lic
           sudo chown -R "$(id -u)":"$(id -g)" build Library || true
           ls -laR build | head -40
@@ -85,7 +91,7 @@ jobs:
           mkdir -p /tmp/log
           LOG=build-${{ matrix.target }}.log
           [ -f "$LOG" ] || echo "no log" > "$LOG"
-          grep -nE "error|Error|ERROR|Exception|Failed|failed|\[Build\]" "$LOG" | grep -v "^.*warning" | head -500 > /tmp/log/errors-${{ matrix.target }}.log || true
+          grep -nE "error|Error|ERROR|Exception|Failed|failed|\[Build\]|licence bytes|License id|^---|xml|activat|Activat" "$LOG" | grep -v "^.*warning" | head -500 > /tmp/log/errors-${{ matrix.target }}.log || true
           tail -n 3000 "$LOG" > /tmp/log/tail-${{ matrix.target }}.log
           echo "${{ job.status }} run ${GITHUB_RUN_ID} sha ${GITHUB_SHA}" > /tmp/log/status-${{ matrix.target }}.txt
           git config user.name "farm-world-ci"
