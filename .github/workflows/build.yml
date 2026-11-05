@@ -1,4 +1,5 @@
 name: Build Farm World
+# Personal licence: signs in with UNITY_EMAIL/UNITY_PASSWORD (account must have a password, not Google-only).
 
 on:
   push:
