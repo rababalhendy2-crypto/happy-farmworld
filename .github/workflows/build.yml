@@ -8,113 +8,91 @@ on:
 
 permissions:
   contents: write
-  actions: read
-
-concurrency:
-  group: build-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build:
-    name: ${{ matrix.targetPlatform }}
+    name: ${{ matrix.target }}
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 100
     strategy:
       fail-fast: false
       matrix:
-        targetPlatform: [Android, WebGL]
+        include:
+          - target: Android
+            image: unityci/editor:ubuntu-6000.0.85f1-android-3
+          - target: WebGL
+            image: unityci/editor:ubuntu-6000.0.85f1-webgl-3
     steps:
       - uses: actions/checkout@v4
 
-      - name: Free disk space (Android SDK + IL2CPP need room)
+      - name: Free disk space
         run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost "$AGENT_TOOLSDIRECTORY" /usr/local/lib/android/sdk/ndk || true
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/lib/android /opt/hostedtoolcache || true
           df -h /
 
       - uses: actions/cache@v4
         with:
           path: Library
-          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('Packages/**', 'ProjectSettings/**') }}
-          restore-keys: Library-${{ matrix.targetPlatform }}-
+          key: Library2-${{ matrix.target }}-${{ hashFiles('Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library2-${{ matrix.target }}-
 
-      - name: Build with Unity 6
-        id: unity
-        uses: game-ci/unity-builder@v4
+      - name: Build with Unity 6 (full log kept)
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          unityVersion: 6000.0.85f1
-          targetPlatform: ${{ matrix.targetPlatform }}
-          buildMethod: FarmWorld.EditorTools.BuildScript.BuildFromCommandLine
-          buildName: FarmWorld
-          versioning: None
+        run: |
+          set -o pipefail
+          mkdir -p build lic
+          printf '%s' "$UNITY_LICENSE" > lic/Unity_lic.ulf
+          echo "licence bytes: $(wc -c < lic/Unity_lic.ulf)"
+          if [ "${{ matrix.target }}" = "Android" ]; then OUT=build/Android/FarmWorld.apk; else OUT=build/WebGL/FarmWorld; fi
+          docker run --rm \
+            -v "$PWD":/project -w /project \
+            -v "$PWD/lic/Unity_lic.ulf":/root/.local/share/unity3d/Unity/Unity_lic.ulf:ro \
+            ${{ matrix.image }} \
+            bash -c "unity-editor -nographics -logFile - -projectPath /project -buildTarget ${{ matrix.target }} \
+              -executeMethod FarmWorld.EditorTools.BuildScript.BuildFromCommandLine -customBuildPath /project/$OUT" \
+            2>&1 | tee build-${{ matrix.target }}.log
+          rm -rf lic
+          sudo chown -R "$(id -u)":"$(id -g)" build Library || true
+          ls -laR build | head -40
 
       - name: Publish build to the builds branch
         if: success()
         run: |
           set -e
-          sudo chown -R "$(id -u)":"$(id -g)" build || true
           git config user.name "farm-world-ci"
           git config user.email "ci@users.noreply.github.com"
-          git fetch origin builds:builds || true
-          rm -rf /tmp/out && mkdir -p /tmp/out
-          if [ "${{ matrix.targetPlatform }}" = "Android" ]; then
-            find build/Android -name "*.apk" -exec cp {} /tmp/out/FarmWorld-Unity.apk \;
-          else
-            cp -r build/WebGL/FarmWorld /tmp/out/web 2>/dev/null || cp -r build/WebGL/* /tmp/out/web
-          fi
-          ls -la /tmp/out
+          git fetch origin builds:builds
           for attempt in 1 2 3 4 5; do
-            rm -rf /tmp/wt && git worktree prune
+            rm -rf /tmp/wt; git worktree prune
             git worktree add /tmp/wt builds
-            cd /tmp/wt
-            git pull --rebase origin builds || true
-            if [ "${{ matrix.targetPlatform }}" = "Android" ]; then
-              cp /tmp/out/FarmWorld-Unity.apk .
+            if [ "${{ matrix.target }}" = "Android" ]; then
+              cp build/Android/FarmWorld.apk /tmp/wt/FarmWorld-Unity.apk
             else
-              rm -rf web && cp -r /tmp/out/web web
+              rm -rf /tmp/wt/web && cp -r build/WebGL/FarmWorld /tmp/wt/web
             fi
-            echo "${{ matrix.targetPlatform }}: ${GITHUB_SHA} $(date -u +%FT%TZ)" >> BUILDS.log
-            git add -A
-            git commit -m "CI: ${{ matrix.targetPlatform }} build of ${GITHUB_SHA::7}" || true
-            if git push origin builds; then break; fi
-            cd - && sleep $((attempt * 5))
+            cd /tmp/wt
+            echo "${{ matrix.target }} ${GITHUB_SHA::7} $(date -u +%FT%TZ)" >> BUILDS.log
+            git add -A && git commit -qm "CI: ${{ matrix.target }} build of ${GITHUB_SHA::7}"
+            if git push origin HEAD:builds; then break; fi
+            cd "$GITHUB_WORKSPACE"; git fetch origin builds:builds --force; sleep $((attempt * 7))
           done
 
-  report:
-    name: Failure report
-    needs: build
-    if: failure()
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Collect logs of failed jobs into the ci-logs branch
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Save log to ci-logs branch
+        if: always()
         run: |
-          set -x
+          rm -rf lic
           mkdir -p /tmp/log
-          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs" > /tmp/log/jobs.json || true
-          for id in $(jq -r '.jobs[] | select(.conclusion=="failure") | .id' /tmp/log/jobs.json); do
-            name=$(jq -r ".jobs[] | select(.id==$id) | .name" /tmp/log/jobs.json)
-            for t in 1 2 3 4 5 6; do
-              curl -sSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
-                "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/jobs/$id/logs" -o "/tmp/log/full-$name.log" || true
-              [ -s "/tmp/log/full-$name.log" ] && break
-              sleep 20
-            done
-            ls -la /tmp/log
-            grep -nE "error|Error|ERROR|exception|Exception|failed|Failed" "/tmp/log/full-$name.log" | head -400 > "/tmp/log/errors-$name.log" || true
-            tail -n 2500 "/tmp/log/full-$name.log" > "/tmp/log/tail-$name.log"
-            rm -f "/tmp/log/full-$name.log"
-          done
-          echo "run ${GITHUB_RUN_ID} sha ${GITHUB_SHA}" > /tmp/log/RUN.txt
+          LOG=build-${{ matrix.target }}.log
+          [ -f "$LOG" ] || echo "no log" > "$LOG"
+          grep -nE "error|Error|ERROR|Exception|Failed|failed|\[Build\]" "$LOG" | grep -v "^.*warning" | head -500 > /tmp/log/errors-${{ matrix.target }}.log || true
+          tail -n 3000 "$LOG" > /tmp/log/tail-${{ matrix.target }}.log
+          echo "${{ job.status }} run ${GITHUB_RUN_ID} sha ${GITHUB_SHA}" > /tmp/log/status-${{ matrix.target }}.txt
           git config user.name "farm-world-ci"
           git config user.email "ci@users.noreply.github.com"
-          git checkout --orphan ci-logs-tmp
-          git rm -rf . -q || true
+          BR=ci-logs-${{ matrix.target }}
+          git checkout -q --orphan logtmp
+          git rm -rf -q . || true
           cp /tmp/log/* .
-          git add -A && git commit -qm "CI failure report ${GITHUB_SHA::7}"
-          git push -f origin HEAD:ci-logs
+          git add -A && git commit -qm "log ${{ matrix.target }} ${GITHUB_SHA::7} ${{ job.status }}"
+          git push -f origin HEAD:$BR
