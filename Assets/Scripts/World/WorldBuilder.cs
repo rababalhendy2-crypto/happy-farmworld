@@ -50,7 +50,7 @@ namespace FarmWorld.World
             BuildProduction();
             BuildExpansions();
             BuildBorderForest();
-            BuildClouds();
+            // No 3D clouds: with the orthographic camera they looked like white blobs on the ground.
         }
 
         // ------------------------------------------------------------------ helpers

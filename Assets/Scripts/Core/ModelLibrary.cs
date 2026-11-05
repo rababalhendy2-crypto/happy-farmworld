@@ -60,16 +60,20 @@ namespace FarmWorld.Core
             FixMaterials(model, objColors, tint, castShadows);
 
             var b = LocalBounds(model, pivot.transform);
+            // Crop models are authored with y = 0 at soil level (carrot roots sit below it):
+            // keep that ground line instead of lifting the whole plant onto the soil.
+            bool soil = path.StartsWith("Crops/");
             float measure = fit switch
             {
-                Fit.Height => b.size.y,
+                Fit.Height => soil ? Mathf.Max(b.max.y, 0.0001f) : b.size.y,
                 Fit.Footprint => Mathf.Max(b.size.x, b.size.z),
                 _ => Mathf.Max(b.size.x, b.size.z),
             };
             float k = size / Mathf.Max(measure, 0.0001f);
             model.transform.localScale = model.transform.localScale * k;
             b = LocalBounds(model, pivot.transform);
-            model.transform.localPosition -= new Vector3(b.center.x, b.min.y, b.center.z);
+            float lift = soil ? Mathf.Max(0f, b.min.y) : b.min.y;
+            model.transform.localPosition -= new Vector3(b.center.x, lift, b.center.z);
             return pivot;
         }
 

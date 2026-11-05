@@ -72,6 +72,8 @@ jobs:
         if: success()
         run: |
           set -e
+          HEAD_SHA=$(git ls-remote origin "refs/heads/${GITHUB_REF_NAME}" | cut -f1)
+          if [ "$HEAD_SHA" != "$GITHUB_SHA" ]; then echo "A newer commit is on ${GITHUB_REF_NAME}; not publishing this older build."; exit 0; fi
           git config user.name "farm-world-ci"
           git config user.email "ci@users.noreply.github.com"
           git fetch origin builds:builds

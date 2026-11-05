@@ -11,7 +11,7 @@ namespace FarmWorld.Farming
     {
         public int Index;
 
-        Transform _plants, _marker;
+        Transform _plants;
         string _shownCrop = "";
         int _shownStage = -1;
         float _nextCheck;
@@ -20,12 +20,6 @@ namespace FarmWorld.Farming
 
         void Update()
         {
-            if (_marker != null)
-            {
-                float t = Time.time * 2.2f + Index;
-                _marker.localPosition = new Vector3(0, 2.3f + Mathf.Sin(t) * 0.18f, 0);
-                _marker.localRotation = Quaternion.Euler(0, Time.time * 60f, 0);
-            }
             if (Time.time < _nextCheck) return;
             _nextCheck = Time.time + 0.5f;
             Refresh(false);
@@ -51,8 +45,7 @@ namespace FarmWorld.Farming
         void Rebuild(string cropId, int stage)
         {
             if (_plants != null) Destroy(_plants.gameObject);
-            if (_marker != null) Destroy(_marker.gameObject);
-            _plants = null; _marker = null;
+            _plants = null;
             if (cropId.Length == 0 || !GameConfig.CropById.TryGetValue(cropId, out var crop)) return;
 
             _plants = new GameObject("Plants").transform;
@@ -72,13 +65,9 @@ namespace FarmWorld.Farming
                         ModelLibrary.Fit.Height, R(0, 360), null, r == 0 || stage >= 3);
                 }
 
+            // Ripe crops sway gently in place; nothing floats above the field.
             if (stage == 4)
-            {
-                _marker = new GameObject("ReadyMarker").transform;
-                _marker.SetParent(transform, false);
-                var icon = ModelLibrary.Spawn("Crops/" + m + "_Crop.obj", _marker, Vector3.zero, 0.9f, ModelLibrary.Fit.Height, 0, null, false);
-                if (icon == null) ModelLibrary.Spawn("Crops/" + m + "_4.obj", _marker, Vector3.zero, 0.9f, ModelLibrary.Fit.Height, 0, null, false);
-            }
+                foreach (Transform plant in _plants) plant.gameObject.AddComponent<World.WindSway>();
         }
 
         /// <summary>Short squash-and-stretch so planting, ripening and harvesting feel responsive.</summary>
