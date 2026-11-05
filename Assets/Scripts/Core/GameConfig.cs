@@ -15,6 +15,17 @@ namespace FarmWorld.Core
         public Color Color;
     }
 
+    public class AnimalDef
+    {
+        public string Id;          // chicken, cow, sheep
+        public string FeedItem;
+        public int FeedQty;
+        public string Product;
+        public int ProductQty;
+        public int ProduceSeconds;
+        public int Xp;
+    }
+
     /// <summary>Balance values read from Resources/Data/game_config.json (one source of truth).</summary>
     public static class GameConfig
     {
@@ -27,6 +38,8 @@ namespace FarmWorld.Core
         public static readonly List<CropDef> Crops = new();
         public static readonly Dictionary<string, CropDef> CropById = new();
         public static readonly Dictionary<string, int> SellPrice = new();
+        public static readonly Dictionary<string, AnimalDef> AnimalById = new();
+        public static int StartHappiness = 70, FeedBonus = 15, HungryDecayPerHour = 5, MinHappiness = 30, BonusThreshold = 85, BonusQty = 1;
         public static int StartCoins = 120;
         public static int StartingPlots = 6;
         public static int StorageCapacity = 60;
@@ -80,6 +93,30 @@ namespace FarmWorld.Core
                 Crops.Add(def);
                 CropById[id] = def;
             }
+
+            // MVP animals from the design document: chicken, cow, sheep.
+            var animals = MiniJson.O(root, "animals");
+            foreach (var id in new[] { "chicken", "cow", "sheep" })
+            {
+                var a = MiniJson.O(animals, id);
+                AnimalById[id] = new AnimalDef
+                {
+                    Id = id,
+                    FeedItem = MiniJson.S(a, "feed_item", "wheat"),
+                    FeedQty = Mathf.Max(1, (int)MiniJson.N(a, "feed_qty", 1)),
+                    Product = MiniJson.S(a, "product", id == "chicken" ? "egg" : id == "cow" ? "milk" : "wool"),
+                    ProductQty = Mathf.Max(1, (int)MiniJson.N(a, "product_qty", 1)),
+                    ProduceSeconds = Mathf.Max(5, (int)MiniJson.N(a, "produce_seconds", 120)),
+                    Xp = (int)MiniJson.N(a, "xp", 2),
+                };
+            }
+            var care = MiniJson.O(root, "animal_care");
+            StartHappiness = (int)MiniJson.N(care, "start_happiness", StartHappiness);
+            FeedBonus = (int)MiniJson.N(care, "feed_bonus", FeedBonus);
+            HungryDecayPerHour = (int)MiniJson.N(care, "decay_per_hour_hungry", HungryDecayPerHour);
+            MinHappiness = (int)MiniJson.N(care, "min_happiness", MinHappiness);
+            BonusThreshold = (int)MiniJson.N(care, "bonus_threshold", BonusThreshold);
+            BonusQty = (int)MiniJson.N(care, "bonus_qty", BonusQty);
 
             var items = MiniJson.O(root, "items");
             if (items != null)

@@ -268,7 +268,14 @@ namespace FarmWorld.World
             w.Area = new Rect(area.xMin + 0.8f, area.yMin + 0.8f, area.width - 1.6f, area.height - 1.6f);
             w.Speed = length < 1f ? 0.9f : 0.55f;
             Selectable.Make(a, titleKey, "animal", titleKey);
+            string type = titleKey.Replace("animal_", "");
+            _animalCount.TryGetValue(type, out int n);
+            _animalCount[type] = n + 1;
+            var unit = a.AddComponent<Farming.AnimalUnit>();
+            unit.Id = type + "_" + n; unit.Type = type; unit.Height = Mathf.Max(0.5f, length * 0.6f);
         }
+
+        readonly Dictionary<string, int> _animalCount = new();
 
         // ------------------------------------------------------------------ other regions
 

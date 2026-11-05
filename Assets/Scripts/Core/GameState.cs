@@ -7,6 +7,8 @@ namespace FarmWorld.Core
 {
     [Serializable] public class ItemStack { public string id; public int count; }
     [Serializable] public class PlotSave { public string crop = ""; public long plantedUtc; }
+    /// <summary>fedUtc = 0 means hungry; otherwise the animal is producing (or done) since fedUtc. hungrySinceUtc drives happiness decay.</summary>
+    [Serializable] public class AnimalSave { public string id; public string type; public long fedUtc; public int happiness; public long hungrySinceUtc; }
 
     [Serializable]
     public class SaveData
@@ -17,6 +19,7 @@ namespace FarmWorld.Core
         public int level = 1;
         public List<ItemStack> inventory = new();
         public List<PlotSave> plots = new();
+        public List<AnimalSave> animals = new();
         public long savedUtc;
     }
 
@@ -167,6 +170,69 @@ namespace FarmWorld.Core
                 LeveledUp?.Invoke(Data.level);
             }
             Touch();
+        }
+
+        // ------------------------------------------------------------- animals
+
+        public enum AnimalState { Hungry, Producing, Ready }
+
+        public AnimalSave Animal(string id, string type)
+        {
+            foreach (var a in Data.animals) if (a.id == id) return a;
+            var n = new AnimalSave { id = id, type = type, happiness = GameConfig.StartHappiness, hungrySinceUtc = Now };
+            Data.animals.Add(n);
+            Touch();
+            return n;
+        }
+
+        public AnimalState StateOf(AnimalSave a)
+        {
+            if (a.fedUtc == 0 || !GameConfig.AnimalById.TryGetValue(a.type, out var def)) return AnimalState.Hungry;
+            return Now - a.fedUtc >= def.ProduceSeconds ? AnimalState.Ready : AnimalState.Producing;
+        }
+
+        public long AnimalSecondsLeft(AnimalSave a)
+        {
+            if (a.fedUtc == 0 || !GameConfig.AnimalById.TryGetValue(a.type, out var def)) return 0;
+            return Math.Max(0, a.fedUtc + def.ProduceSeconds - Now);
+        }
+
+        /// <summary>Happiness drops slowly while an animal waits hungry, never below the minimum.</summary>
+        int CurrentHappiness(AnimalSave a)
+        {
+            if (a.fedUtc != 0 || a.hungrySinceUtc == 0) return a.happiness;
+            int hours = (int)((Now - a.hungrySinceUtc) / 3600);
+            return Mathf.Max(GameConfig.MinHappiness, a.happiness - hours * GameConfig.HungryDecayPerHour);
+        }
+
+        public int Happiness(AnimalSave a) => CurrentHappiness(a);
+
+        public enum FeedResult { Ok, NoFeed, NotHungry }
+
+        public FeedResult Feed(AnimalSave a)
+        {
+            if (StateOf(a) != AnimalState.Hungry || !GameConfig.AnimalById.TryGetValue(a.type, out var def)) return FeedResult.NotHungry;
+            if (!RemoveItem(def.FeedItem, def.FeedQty)) return FeedResult.NoFeed;
+            a.happiness = Mathf.Min(100, CurrentHappiness(a) + GameConfig.FeedBonus);
+            a.fedUtc = Now; a.hungrySinceUtc = 0;
+            Touch();
+            return FeedResult.Ok;
+        }
+
+        public enum CollectResult { Ok, NotReady, StorageFull }
+
+        public CollectResult Collect(AnimalSave a, out string product, out int qty)
+        {
+            product = null; qty = 0;
+            if (StateOf(a) != AnimalState.Ready || !GameConfig.AnimalById.TryGetValue(a.type, out var def)) return CollectResult.NotReady;
+            product = def.Product;
+            qty = def.ProductQty + (a.happiness >= GameConfig.BonusThreshold ? GameConfig.BonusQty : 0);
+            if (StorageFree < qty) return CollectResult.StorageFull;
+            AddItem(product, qty);
+            a.fedUtc = 0; a.hungrySinceUtc = Now;
+            AddXp(def.Xp);
+            Touch();
+            return CollectResult.Ok;
         }
 
         // ------------------------------------------------------------- fields

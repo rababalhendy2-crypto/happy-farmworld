@@ -136,6 +136,8 @@ namespace FarmWorld.UI
         {
             CloseSeeds();
             if (s == null) { _selection.text = ""; return; }
+            var animal = s.GetComponent<AnimalUnit>();
+            if (animal != null) { OnAnimal(animal, s); return; }
             var plot = s.GetComponent<FieldPlot>();
             if (plot == null)
             {
@@ -167,6 +169,44 @@ namespace FarmWorld.UI
         }
 
         float _selectionUntil;
+
+        void OnAnimal(AnimalUnit unit, Selectable s)
+        {
+            var gs = GameState.I;
+            var save = unit.Save;
+            if (save == null || !GameConfig.AnimalById.TryGetValue(unit.Type, out var def)) return;
+            string name = Texts.Get(s.TitleKey);
+            switch (gs.StateOf(save))
+            {
+                case GameState.AnimalState.Hungry:
+                    switch (gs.Feed(save))
+                    {
+                        case GameState.FeedResult.Ok:
+                            Floater("-" + def.FeedQty + " " + Texts.Get(def.FeedItem), unit.transform.position + Vector3.up * 1.4f);
+                            Toast(Fmt("ui_fed", name, Texts.Get(def.Product), Duration(def.ProduceSeconds)), 2.2f);
+                            break;
+                        case GameState.FeedResult.NoFeed:
+                            Toast(Fmt("ui_needs_feed", name, def.FeedQty, Texts.Get(def.FeedItem)), 2.6f);
+                            break;
+                    }
+                    break;
+                case GameState.AnimalState.Producing:
+                    Toast(Fmt("ui_producing", name, Texts.Get(def.Product), Duration(gs.AnimalSecondsLeft(save)), gs.Happiness(save)), 2.2f);
+                    break;
+                case GameState.AnimalState.Ready:
+                    switch (gs.Collect(save, out var product, out int qty))
+                    {
+                        case GameState.CollectResult.Ok:
+                            Floater(Fmt("ui_harvested", qty, Texts.Get(product)), unit.transform.position + Vector3.up * 1.6f);
+                            break;
+                        case GameState.CollectResult.StorageFull:
+                            Toast(Texts.Get("ui_storage_full"), 2.5f);
+                            break;
+                    }
+                    break;
+            }
+            unit.Refresh(true);
+        }
 
         // ------------------------------------------------------------------ seed sheet
 
@@ -295,7 +335,9 @@ namespace FarmWorld.UI
             {
                 var row = Box(_storageList, "Row", new Vector2(0.5f, 1), new Vector2(0, -y), new Vector2(580, 62), Color.white);
                 row.pivot = new Vector2(0.5f, 1);
-                var col = GameConfig.CropById.TryGetValue(stack.id, out var cd) ? cd.Color : new Color(0.8f, 0.75f, 0.65f);
+                var col = GameConfig.CropById.TryGetValue(stack.id, out var cd) ? cd.Color
+                        : stack.id == "milk" ? new Color(0.95f, 0.96f, 1f) : stack.id == "wool" ? new Color(0.93f, 0.9f, 0.84f)
+                        : stack.id == "egg" ? new Color(0.99f, 0.9f, 0.72f) : new Color(0.8f, 0.75f, 0.65f);
                 Img(row, _circle, col, new Vector2(0, 0.5f), new Vector2(12, 0), new Vector2(40, 40));
                 Label(row, Texts.Get(stack.id), 24, Ink, TextAnchor.MiddleLeft, new Vector2(64, 0), new Vector2(200, 62), new Vector2(0, 0.5f));
                 Label(row, "x" + stack.count, 24, Ink, TextAnchor.MiddleLeft, new Vector2(250, 0), new Vector2(80, 62), new Vector2(0, 0.5f));

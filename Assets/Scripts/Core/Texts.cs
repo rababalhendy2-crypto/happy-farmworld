@@ -25,6 +25,8 @@ namespace FarmWorld.Core
             { "ui_not_enough_coins", "Not enough coins" }, { "ui_storage_full", "Storage is full – sell something first" },
             { "ui_growing", "{0} – ready in {1}" }, { "ui_planted", "{0} planted" }, { "ui_harvested", "+{0} {1}" },
             { "ui_sold", "+{0} coins" }, { "ui_level_up", "Level {0}! +{1} coins" }, { "ui_needs_level", "Unlocks at level {0}" },
+            { "ui_fed", "{0} fed – {1} in {2}" }, { "ui_needs_feed", "{0} needs {1} {2} – grow some first" },
+            { "ui_producing", "{0} – {1} in {2} · happiness {3}%" },
         };
 
         public static string Get(string key) => key != null && En.TryGetValue(key, out var v) ? v : key ?? "";
