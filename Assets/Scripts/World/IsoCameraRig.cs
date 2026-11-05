@@ -74,6 +74,8 @@ namespace FarmWorld.World
         static bool OverUi(int pointerId) =>
             EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(pointerId);
 
+        int _beganFinger = -1;
+
         void HandleTouch()
         {
             if (Input.touchCount >= 2)
@@ -95,6 +97,7 @@ namespace FarmWorld.World
             switch (touch.phase)
             {
                 case TouchPhase.Began:
+                    _beganFinger = touch.fingerId;
                     _multi = false;
                     _dragging = OverUi(touch.fingerId);   // touches that start on UI never move the camera
                     _downPos = touch.position; _downTime = Time.unscaledTime;
@@ -106,6 +109,9 @@ namespace FarmWorld.World
                     if (_dragging) Pan(touch.deltaPosition);
                     break;
                 case TouchPhase.Ended:
+                    // A very quick tap can end before its Began phase was ever seen in a frame.
+                    if (_beganFinger != touch.fingerId && !_multi && !OverUi(touch.fingerId)) { Tap(touch.position); _dragging = false; break; }
+                    _beganFinger = -1;
                     if (!_dragging && !_multi && _downTime > 0f && Time.unscaledTime - _downTime < 0.45f) Tap(touch.position);
                     _dragging = false;
                     if (Input.touchCount <= 1) _multi = false;
@@ -135,7 +141,8 @@ namespace FarmWorld.World
                 if (_dragging) Pan(delta);
                 _lastMouse = Input.mousePosition;
             }
-            else if (Input.GetMouseButtonUp(0))
+            // Not "else": on a slow frame the press and release can arrive together; that is still a tap.
+            if (Input.GetMouseButtonUp(0))
             {
                 if (!_dragging && _downTime > 0f) Tap(Input.mousePosition);
                 _dragging = false;

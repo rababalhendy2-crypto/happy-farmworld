@@ -257,13 +257,13 @@ namespace FarmWorld.UI
                 card.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
                 var sw = Img(card, _circle, locked ? new Color(0.6f, 0.6f, 0.6f) : crop.Color, new Vector2(0.5f, 1), new Vector2(0, -12), new Vector2(54, 54));
                 sw.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1);
-                Label(card, Texts.Get(crop.Id), 22, Ink, TextAnchor.MiddleCenter, new Vector2(0, -78), new Vector2(w, 30), new Vector2(0.5f, 1));
+                Label(card, Texts.Get(crop.Id), 22, Ink, TextAnchor.MiddleCenter, new Vector2(0, -72), new Vector2(w, 30), new Vector2(0.5f, 1));
                 if (locked)
                     Label(card, Fmt("ui_locked", crop.UnlockLevel), 20, new Color(0.45f, 0.4f, 0.35f), TextAnchor.MiddleCenter, new Vector2(0, 20), new Vector2(w, 30), new Vector2(0.5f, 0));
                 else
                 {
                     Label(card, crop.SeedPrice + " c", 22, afford ? new Color(0.62f, 0.42f, 0.02f) : new Color(0.8f, 0.2f, 0.15f),
-                        TextAnchor.MiddleCenter, new Vector2(0, 34), new Vector2(w, 28), new Vector2(0.5f, 0));
+                        TextAnchor.MiddleCenter, new Vector2(0, 30), new Vector2(w, 28), new Vector2(0.5f, 0));
                     Label(card, Duration(crop.GrowSeconds), 18, new Color(0.4f, 0.35f, 0.3f), TextAnchor.MiddleCenter,
                         new Vector2(0, 8), new Vector2(w, 26), new Vector2(0.5f, 0));
                 }

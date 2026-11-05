@@ -187,7 +187,7 @@ namespace FarmWorld.World
             var coopYard = new Rect(-16f, -10f, 7f, 4.5f);
             Fence(coopYard, Hex("#d9b98a"));
             for (int i = 0; i < 4; i++)
-                Animal("Animals/Chick", new Vector3(R(-15f, -10f), 0, R(-9.5f, -6.5f)), 0.55f, coopYard, "animal_chicken");
+                Animal("Animals/Chick", new Vector3(R(-15f, -10f), 0, R(-9.5f, -6.5f)), 0.75f, coopYard, "animal_chicken");
 
             // Garden details around the house
             for (int i = 0; i < 6; i++)
