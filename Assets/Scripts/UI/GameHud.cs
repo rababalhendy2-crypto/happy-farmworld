@@ -136,6 +136,8 @@ namespace FarmWorld.UI
         {
             CloseSeeds();
             if (s == null) { _selection.text = ""; return; }
+            var drop = s.GetComponent<ProductDrop>();
+            if (drop != null && drop.Unit != null) { OnAnimal(drop.Unit, drop.Unit.GetComponent<Selectable>()); return; }
             var animal = s.GetComponent<AnimalUnit>();
             if (animal != null) { OnAnimal(animal, s); return; }
             var plot = s.GetComponent<FieldPlot>();

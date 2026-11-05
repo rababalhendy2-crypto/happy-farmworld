@@ -29,12 +29,6 @@ namespace FarmWorld.Farming
 
         void Update()
         {
-            if (_marker != null)
-            {
-                float t = Time.time * 2.4f + Id.GetHashCode() % 7;
-                _marker.position = transform.position + Vector3.up * (Height + 0.5f + Mathf.Sin(t) * 0.12f);
-                _marker.rotation = Quaternion.Euler(0, Time.time * 70f, 0);
-            }
             if (Time.time < _nextCheck) return;
             _nextCheck = Time.time + 0.5f;
             Refresh(false);
@@ -48,18 +42,20 @@ namespace FarmWorld.Farming
             _shown = st;
             if (_marker != null) Destroy(_marker.gameObject);
             _marker = null;
-            if (st == GameState.AnimalState.Producing) return;
+            if (st != GameState.AnimalState.Ready) return;
 
-            // Marker lives outside the animal so it does not inherit the animal's scale.
-            _marker = new GameObject("Marker_" + Id).transform;
-            if (st == GameState.AnimalState.Hungry)
-            {
-                var feed = GameConfig.AnimalById.TryGetValue(Type, out var d) ? d.FeedItem : "wheat";
-                string model = feed == "carrot" ? "Carrot" : "Wheat";
-                if (ModelLibrary.Spawn("Crops/" + model + "_Crop.obj", _marker, Vector3.zero, 0.5f, ModelLibrary.Fit.Height, 0, null, false) == null)
-                    Ball(_marker, Vector3.zero, new Vector3(0.3f, 0.3f, 0.3f), new Color(0.92f, 0.78f, 0.3f));
-            }
-            else ProductIcon(_marker, GameConfig.AnimalById.TryGetValue(Type, out var d) ? d.Product : "egg");
+            // The product is laid on the ground where the animal stands (no floating icons).
+            _marker = new GameObject("Product_" + Id).transform;
+            var p = transform.position; p.y = 0f;
+            var side = transform.right * (Height * 0.45f + 0.25f);
+            _marker.position = p + new Vector3(side.x, 0f, side.z);
+            _marker.rotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+            ProductIcon(_marker, GameConfig.AnimalById.TryGetValue(Type, out var d) ? d.Product : "egg");
+            var col = _marker.gameObject.AddComponent<BoxCollider>();
+            col.center = new Vector3(0, 0.3f, 0); col.size = new Vector3(1.1f, 0.8f, 1.1f);
+            var sel = _marker.gameObject.AddComponent<World.Selectable>();
+            sel.Id = Id + "_product"; sel.Kind = "product"; sel.TitleKey = GetComponent<World.Selectable>()?.TitleKey;
+            _marker.gameObject.AddComponent<ProductDrop>().Unit = this;
         }
 
         public static void ProductIcon(Transform parent, string product)
@@ -68,17 +64,17 @@ namespace FarmWorld.Farming
             {
                 case "milk":
                     var body = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                    Prep(body, parent, new Vector3(0, 0, 0), new Vector3(0.28f, 0.2f, 0.28f), new Color(0.97f, 0.97f, 0.95f));
+                    Prep(body, parent, new Vector3(0, 0.2f, 0), new Vector3(0.28f, 0.2f, 0.28f), new Color(0.97f, 0.97f, 0.95f));
                     var cap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                    Prep(cap, parent, new Vector3(0, 0.24f, 0), new Vector3(0.14f, 0.06f, 0.14f), new Color(0.25f, 0.55f, 0.9f));
+                    Prep(cap, parent, new Vector3(0, 0.44f, 0), new Vector3(0.14f, 0.06f, 0.14f), new Color(0.25f, 0.55f, 0.9f));
                     break;
                 case "wool":
-                    Ball(parent, new Vector3(-0.1f, 0, 0), new Vector3(0.26f, 0.22f, 0.26f), new Color(0.98f, 0.97f, 0.93f));
-                    Ball(parent, new Vector3(0.1f, 0.02f, 0.04f), new Vector3(0.24f, 0.22f, 0.24f), new Color(0.96f, 0.95f, 0.9f));
-                    Ball(parent, new Vector3(0f, 0.12f, -0.04f), new Vector3(0.22f, 0.2f, 0.22f), new Color(1f, 0.99f, 0.95f));
+                    Ball(parent, new Vector3(-0.1f, 0.1f, 0), new Vector3(0.26f, 0.22f, 0.26f), new Color(0.98f, 0.97f, 0.93f));
+                    Ball(parent, new Vector3(0.1f, 0.1f, 0.04f), new Vector3(0.24f, 0.22f, 0.24f), new Color(0.96f, 0.95f, 0.9f));
+                    Ball(parent, new Vector3(0f, 0.2f, -0.04f), new Vector3(0.22f, 0.2f, 0.22f), new Color(1f, 0.99f, 0.95f));
                     break;
                 default: // egg
-                    Ball(parent, Vector3.zero, new Vector3(0.22f, 0.3f, 0.22f), new Color(0.99f, 0.93f, 0.8f));
+                    Ball(parent, new Vector3(0, 0.14f, 0), new Vector3(0.2f, 0.28f, 0.2f), new Color(0.99f, 0.93f, 0.8f));
                     break;
             }
         }
@@ -93,9 +89,14 @@ namespace FarmWorld.Farming
             go.transform.localPosition = pos; go.transform.localScale = size;
             var r = go.GetComponent<Renderer>();
             r.sharedMaterial = ModelLibrary.Solid(c, 0.35f);
-            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         void OnDestroy() { if (_marker != null) Destroy(_marker.gameObject); }
+    }
+
+    /// <summary>A collectable product lying on the ground; tapping it collects from its animal.</summary>
+    public class ProductDrop : MonoBehaviour
+    {
+        public AnimalUnit Unit;
     }
 }
