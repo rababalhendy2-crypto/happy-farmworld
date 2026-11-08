@@ -71,8 +71,22 @@ namespace FarmWorld.World
 
         // ---------------------------------------------------------------- input
 
-        static bool OverUi(int pointerId) =>
-            EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(pointerId);
+        static readonly System.Collections.Generic.List<RaycastResult> _uiHits = new();
+
+        /// <summary>
+        /// True when a screen position is on a UI element. Raycasts the UI directly instead of using
+        /// IsPointerOverGameObject, whose hover data can still be a frame old when the press, or a quick
+        /// tap, arrives in the same frame as the pointer move. That made seed-card taps fall through to
+        /// the world, which closed the seed sheet instead of planting.
+        /// </summary>
+        static bool OverUi(Vector2 screenPos)
+        {
+            var es = EventSystem.current;
+            if (es == null) return false;
+            _uiHits.Clear();
+            es.RaycastAll(new PointerEventData(es) { position = screenPos }, _uiHits);
+            return _uiHits.Count > 0;
+        }
 
         int _beganFinger = -1;
 
@@ -99,7 +113,7 @@ namespace FarmWorld.World
                 case TouchPhase.Began:
                     _beganFinger = touch.fingerId;
                     _multi = false;
-                    _dragging = OverUi(touch.fingerId);   // touches that start on UI never move the camera
+                    _dragging = OverUi(touch.position);   // touches that start on UI never move the camera
                     _downPos = touch.position; _downTime = Time.unscaledTime;
                     if (_dragging) _downTime = -10f;
                     break;
@@ -110,7 +124,7 @@ namespace FarmWorld.World
                     break;
                 case TouchPhase.Ended:
                     // A very quick tap can end before its Began phase was ever seen in a frame.
-                    if (_beganFinger != touch.fingerId && !_multi && !OverUi(touch.fingerId)) { Tap(touch.position); _dragging = false; break; }
+                    if (_beganFinger != touch.fingerId && !_multi && !OverUi(touch.position)) { Tap(touch.position); _dragging = false; break; }
                     _beganFinger = -1;
                     if (!_dragging && !_multi && _downTime > 0f && Time.unscaledTime - _downTime < 0.45f) Tap(touch.position);
                     _dragging = false;
@@ -126,12 +140,12 @@ namespace FarmWorld.World
         void HandleMouse()
         {
             float wheel = Input.mouseScrollDelta.y;
-            if (Mathf.Abs(wheel) > 0.01f && !OverUi(-1))
+            if (Mathf.Abs(wheel) > 0.01f && !OverUi(Input.mousePosition))
                 _zoomTarget = Mathf.Clamp(_zoomTarget * Mathf.Pow(0.88f, wheel), MinZoom, MaxZoom);
 
             if (Input.GetMouseButtonDown(0))
             {
-                _downPos = Input.mousePosition; _downTime = OverUi(-1) ? -10f : Time.unscaledTime;
+                _downPos = Input.mousePosition; _downTime = OverUi(Input.mousePosition) ? -10f : Time.unscaledTime;
                 _dragging = false; _lastMouse = Input.mousePosition;
             }
             else if (Input.GetMouseButton(0) && _downTime > 0f)
@@ -168,6 +182,7 @@ namespace FarmWorld.World
 
         void Tap(Vector2 screenPos)
         {
+            if (OverUi(screenPos)) return;   // the release landed on UI: the UI handles it
             var ray = Cam.ScreenPointToRay(screenPos);
             Selectable hit = null;
             if (Physics.Raycast(ray, out var info, 400f)) hit = info.collider.GetComponentInParent<Selectable>();
