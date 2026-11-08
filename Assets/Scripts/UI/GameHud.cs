@@ -23,7 +23,7 @@ namespace FarmWorld.UI
 
         Canvas _canvas;
         RectTransform _root;
-        Font _font;
+        Font _font, _arFont;
         Sprite _round, _circle;
 
         Text _coins, _level, _clock, _storageLabel, _toast, _selection;
@@ -40,9 +40,41 @@ namespace FarmWorld.UI
         {
             _font = Resources.Load<Font>("Fonts/NotoSans-Bold");
             if (_font == null) _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            _arFont = Resources.Load<Font>("Fonts/NotoSansArabic-Bold");
+            if (_arFont == null) _arFont = _font;
             _round = MakeRoundedSprite(64, 18);
             _circle = MakeRoundedSprite(64, 32);
+            BuildUi();
 
+            var gs = GameState.I;
+            gs.Changed += RefreshTop;
+            gs.LeveledUp += OnLevelUp;
+            var rig = GameRoot.Instance != null ? GameRoot.Instance.CameraRig : null;
+            if (rig != null) rig.OnSelect += OnSelect;
+            DayNightCycle.OnTimeChanged += OnTime;
+            Texts.Changed += OnLanguageChanged;
+        }
+
+        void OnLevelUp(int lvl) => Toast(Fmt("ui_level_up", lvl, GameConfig.LevelRewardCoins), 3f);
+
+        void OnTime(float t)
+        {
+            int minutes = Mathf.FloorToInt(t * 24f * 60f);
+            if (_clock != null) _clock.text = $"{minutes / 60:00}:{minutes % 60:00}";
+        }
+
+        /// <summary>Switching language rebuilds the whole HUD with the new texts and direction.</summary>
+        void OnLanguageChanged()
+        {
+            foreach (var f in _floaters) if (f.label != null) Destroy(f.label.gameObject);
+            _floaters.Clear();
+            _seedField = -1;
+            if (_canvas != null) Destroy(_canvas.gameObject);
+            BuildUi();
+        }
+
+        void BuildUi()
+        {
             var canvasGo = new GameObject("Canvas");
             canvasGo.transform.SetParent(transform, false);
             _canvas = canvasGo.AddComponent<Canvas>();
@@ -59,24 +91,16 @@ namespace FarmWorld.UI
             BuildSeedSheet();
             BuildStorageWindow();
             BuildToast();
-
-            var gs = GameState.I;
-            gs.Changed += RefreshTop;
-            gs.LeveledUp += lvl => Toast(Fmt("ui_level_up", lvl, GameConfig.LevelRewardCoins), 3f);
             RefreshTop();
-
-            var rig = GameRoot.Instance != null ? GameRoot.Instance.CameraRig : null;
-            if (rig != null) rig.OnSelect += OnSelect;
-            DayNightCycle.OnTimeChanged += t =>
-            {
-                int minutes = Mathf.FloorToInt(t * 24f * 60f);
-                if (_clock != null) _clock.text = $"{minutes / 60:00}:{minutes % 60:00}";
-            };
         }
 
         void OnDestroy()
         {
-            if (GameState.I != null) GameState.I.Changed -= RefreshTop;
+            if (GameState.I != null) { GameState.I.Changed -= RefreshTop; GameState.I.LeveledUp -= OnLevelUp; }
+            var rig = GameRoot.Instance != null ? GameRoot.Instance.CameraRig : null;
+            if (rig != null) rig.OnSelect -= OnSelect;
+            DayNightCycle.OnTimeChanged -= OnTime;
+            Texts.Changed -= OnLanguageChanged;
         }
 
         // ------------------------------------------------------------------ top / bottom bars
@@ -86,7 +110,7 @@ namespace FarmWorld.UI
             // Coins pill (top-left)
             var coinPill = Box(_root, "Coins", new Vector2(0, 1), new Vector2(20, -18), new Vector2(210, 58), Panel);
             var coin = Img(coinPill, _circle, Gold, new Vector2(0, 0.5f), new Vector2(10, 0), new Vector2(40, 40));
-            Label(coin, "c", 24, new Color(0.6f, 0.4f, 0.05f), TextAnchor.MiddleCenter);
+            Img(coin, _circle, new Color(1f, 0.88f, 0.45f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(24, 24));
             _coins = Label(coinPill, "0", 30, Ink, TextAnchor.MiddleLeft, new Vector2(60, 0), new Vector2(140, 58), new Vector2(0, 0.5f));
 
             // Level badge + XP bar
@@ -100,6 +124,11 @@ namespace FarmWorld.UI
             // Clock (top-right)
             _clock = Label(_root, "", 30, Color.white, TextAnchor.UpperRight, new Vector2(-24, -20), new Vector2(200, 50), new Vector2(1, 1));
             Shadow(_clock);
+
+            // Language button (top-right, left of the clock): Arabic -> German -> English
+            var lang = Button(_root, new Vector2(1, 1), new Vector2(-140, -16), new Vector2(100, 52), Panel,
+                () => Texts.SetLanguage(Texts.NextLanguage()));
+            Label(lang, Texts.LanguageLabel(Texts.Lang), 24, Ink, TextAnchor.MiddleCenter);
 
             // Selection name (top-centre)
             _selection = Label(_root, "", 32, Color.white, TextAnchor.UpperCenter, new Vector2(0, -90), new Vector2(900, 50), new Vector2(0.5f, 1));
@@ -121,11 +150,11 @@ namespace FarmWorld.UI
         void RefreshTop()
         {
             var gs = GameState.I; if (gs == null || _coins == null) return;
-            _coins.text = gs.Data.coins.ToString("N0");
+            Set(_coins, gs.Data.coins.ToString("N0"));
             _level.text = gs.Data.level.ToString();
             int a = gs.XpForLevel(gs.Data.level), b = gs.XpForLevel(gs.Data.level + 1);
             _xpFill.fillAmount = Mathf.Clamp01((gs.Data.xp - a) / (float)Mathf.Max(1, b - a));
-            _storageLabel.text = Fmt("ui_storage_count", gs.StorageUsed(), GameConfig.StorageCapacity);
+            Set(_storageLabel, Fmt("ui_storage_count", gs.StorageUsed(), GameConfig.StorageCapacity));
             if (_storageWindow != null && _storageWindow.gameObject.activeSelf) FillStorage();
             if (_seedSheet != null && _seedSheet.gameObject.activeSelf) FillSeeds();
         }
@@ -143,7 +172,7 @@ namespace FarmWorld.UI
             var plot = s.GetComponent<FieldPlot>();
             if (plot == null)
             {
-                _selection.text = Texts.Get(s.TitleKey);
+                Set(_selection, Texts.Get(s.TitleKey));
                 _selectionUntil = Time.time + 3f;
                 return;
             }
@@ -262,7 +291,7 @@ namespace FarmWorld.UI
                     Label(card, Fmt("ui_locked", crop.UnlockLevel), 20, new Color(0.45f, 0.4f, 0.35f), TextAnchor.MiddleCenter, new Vector2(0, 20), new Vector2(w, 30), new Vector2(0.5f, 0));
                 else
                 {
-                    Label(card, crop.SeedPrice + " c", 22, afford ? new Color(0.62f, 0.42f, 0.02f) : new Color(0.8f, 0.2f, 0.15f),
+                    Label(card, crop.SeedPrice + " " + Texts.Get("ui_coins"), 22, afford ? new Color(0.62f, 0.42f, 0.02f) : new Color(0.8f, 0.2f, 0.15f),
                         TextAnchor.MiddleCenter, new Vector2(0, 30), new Vector2(w, 28), new Vector2(0.5f, 0));
                     Label(card, Duration(crop.GrowSeconds), 18, new Color(0.4f, 0.35f, 0.3f), TextAnchor.MiddleCenter,
                         new Vector2(0, 8), new Vector2(w, 26), new Vector2(0.5f, 0));
@@ -284,7 +313,7 @@ namespace FarmWorld.UI
             {
                 var plot = world.Fields[field].GetComponent<FieldPlot>();
                 plot.Refresh(true); plot.Pop();
-                Floater("-" + crop.SeedPrice + " c", plot.transform.position + Vector3.up * 1.2f);
+                Floater("-" + crop.SeedPrice + " " + Texts.Get("ui_coins"), plot.transform.position + Vector3.up * 1.2f);
             }
         }
 
@@ -341,18 +370,22 @@ namespace FarmWorld.UI
                 var col = GameConfig.CropById.TryGetValue(stack.id, out var cd) ? cd.Color
                         : stack.id == "milk" ? new Color(0.95f, 0.96f, 1f) : stack.id == "wool" ? new Color(0.93f, 0.9f, 0.84f)
                         : stack.id == "egg" ? new Color(0.99f, 0.9f, 0.72f) : new Color(0.8f, 0.75f, 0.65f);
-                Img(row, _circle, col, new Vector2(0, 0.5f), new Vector2(12, 0), new Vector2(40, 40));
-                Label(row, Texts.Get(stack.id), 24, Ink, TextAnchor.MiddleLeft, new Vector2(64, 0), new Vector2(200, 62), new Vector2(0, 0.5f));
-                Label(row, "x" + stack.count, 24, Ink, TextAnchor.MiddleLeft, new Vector2(250, 0), new Vector2(80, 62), new Vector2(0, 0.5f));
+                // right-to-left languages mirror the row: icon and name on the right, sell button on the left
+                bool rtl = Texts.Rtl;
+                var side = new Vector2(rtl ? 1 : 0, 0.5f);
+                float dir = rtl ? -1 : 1;
+                var align = rtl ? TextAnchor.MiddleRight : TextAnchor.MiddleLeft;
+                Img(row, _circle, col, side, new Vector2(12 * dir, 0), new Vector2(40, 40));
+                Label(row, Texts.Get(stack.id), 24, Ink, align, new Vector2(64 * dir, 0), new Vector2(180, 62), side);
+                Label(row, "x" + stack.count, 24, Ink, align, new Vector2(250 * dir, 0), new Vector2(80, 62), side);
                 int total = GameConfig.SellPriceOf(stack.id) * stack.count;
                 string id = stack.id;
-                var sell = Button(row, new Vector2(1, 0.5f), new Vector2(-10, 0), new Vector2(200, 46), Green, () =>
+                var sell = Button(row, new Vector2(rtl ? 0 : 1, 0.5f), new Vector2(rtl ? 10 : -10, 0), new Vector2(200, 46), Green, () =>
                 {
                     int got = GameState.I.Sell(id, int.MaxValue);
                     if (got > 0) Toast(Fmt("ui_sold", got), 1.6f);
                 });
-                sell.GetComponent<RectTransform>().pivot = new Vector2(1, 0.5f);
-                Label(sell, Texts.Get("ui_sell_all") + "  " + total + " c", 20, Color.white, TextAnchor.MiddleCenter);
+                Label(sell, Texts.Get("ui_sell_all") + "  " + total + " " + Texts.Get("ui_coins"), 20, Color.white, TextAnchor.MiddleCenter);
                 y += 70;
                 if (y > 400) break;
             }
@@ -371,7 +404,7 @@ namespace FarmWorld.UI
 
         void Toast(string text, float seconds)
         {
-            _toast.text = text;
+            Set(_toast, text);
             _toastUntil = Time.time + seconds;
             _toastGroup.alpha = 1;
             _selection.text = "";
@@ -412,6 +445,16 @@ namespace FarmWorld.UI
         // ------------------------------------------------------------------ helpers
 
         static string Fmt(string key, params object[] args) => string.Format(Texts.Get(key), args);
+
+        /// <summary>Sets a label's text for display: Arabic is shaped/reordered and uses the Arabic font.</summary>
+        void Set(Text t, string raw)
+        {
+            if (t == null) return;
+            bool arabic = false;
+            if (raw != null) foreach (char c in raw) if (c >= '\u0600' && c <= '\u06FF') { arabic = true; break; }
+            t.font = arabic ? _arFont : _font;
+            t.text = Texts.Display(raw ?? "");
+        }
 
         static string Duration(long seconds)
         {
@@ -465,7 +508,8 @@ namespace FarmWorld.UI
             rt.anchorMin = rt.anchorMax = anchor; rt.pivot = anchor;
             rt.anchoredPosition = pos; rt.sizeDelta = box;
             var t = go.AddComponent<Text>();
-            t.font = _font; t.fontSize = size; t.alignment = align; t.color = color; t.text = text;
+            t.fontSize = size; t.alignment = align; t.color = color;
+            Set(t, text);
             t.raycastTarget = false;
             t.horizontalOverflow = HorizontalWrapMode.Overflow;
             t.verticalOverflow = VerticalWrapMode.Overflow;

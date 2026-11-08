@@ -42,7 +42,38 @@ namespace FarmWorld.EditorTools
             PlayerSettings.WebGL.memorySize = 512;
 
             EnsureMaterials();
+            EnsureFontFallbacks();
             AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>
+        /// One Latin and one Arabic font fall back to each other, so any label can mix Arabic letters
+        /// (presentation forms), Latin letters and digits.
+        /// </summary>
+        static void EnsureFontFallbacks()
+        {
+            const string latin = "Assets/Resources/Fonts/NotoSans-Bold.ttf";
+            const string arabic = "Assets/Resources/Fonts/NotoSansArabic-Bold.ttf";
+            Link(latin, arabic);
+            Link(arabic, latin);
+
+            static void Link(string fontPath, string fallbackPath)
+            {
+                var importer = AssetImporter.GetAtPath(fontPath) as TrueTypeFontImporter;
+                var fallback = AssetDatabase.LoadAssetAtPath<Font>(fallbackPath);
+                if (importer == null || fallback == null) { Debug.LogError("[Build] font missing: " + fontPath); return; }
+                importer.fontTextureCase = FontTextureCase.Dynamic;
+                // "Font Names"/fallback references are not public API: set the serialized fields.
+                var so = new SerializedObject(importer);
+                var refs = so.FindProperty("m_FontReferences");
+                var names = so.FindProperty("m_FontNames");
+                if (refs != null) { refs.arraySize = 1; refs.GetArrayElementAtIndex(0).objectReferenceValue = fallback; }
+                if (names != null) { names.arraySize = 1; names.GetArrayElementAtIndex(0).stringValue = fallback.name; }
+                so.ApplyModifiedPropertiesWithoutUndo();
+                if (refs == null) Debug.LogError("[Build] m_FontReferences not found on " + fontPath);
+                importer.SaveAndReimport();
+                Debug.Log("[Build] font fallback " + fontPath + " -> " + fallbackPath);
+            }
         }
 
         static int VersionCode(string v)
