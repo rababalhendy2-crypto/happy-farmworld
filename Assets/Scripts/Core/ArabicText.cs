@@ -54,7 +54,8 @@ namespace FarmWorld.Core
             if (!any) return s;
             if (Cache.TryGetValue(s, out var cached)) return cached;
 
-            var lines = s.Split('\n');
+            // NotoSansArabic has no en dash, middle dot or Latin percent sign: swap in glyphs it has
+            var lines = s.Replace('–', '-').Replace('—', '-').Replace('·', '-').Replace('%', '٪').Split('\n');
             for (int i = 0; i < lines.Length; i++) lines[i] = Reorder(Shape(lines[i]));
             var result = string.Join("\n", lines);
             if (Cache.Count > 512) Cache.Clear();
@@ -124,7 +125,7 @@ namespace FarmWorld.Core
                             j + 1 < s.Length && (IsDigit(s[j + 1]) || IsLtrStrong(s[j + 1])) &&
                             !(c == ' ' && IsDigit(s[j - 1]) != IsDigit(s[j + 1])))
                         { j++; continue; }
-                        if (c == '%' && IsDigit(s[j - 1])) { j++; continue; }
+                        if ((c == '%' || c == '٪') && IsDigit(s[j - 1])) { j++; continue; }
                         break;
                     }
                     segments.Add(s.Substring(i, j - i));
