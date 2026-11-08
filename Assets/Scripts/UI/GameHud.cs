@@ -281,7 +281,7 @@ namespace FarmWorld.UI
                 bool locked = gs.Data.level < crop.UnlockLevel;
                 bool afford = gs.Data.coins >= crop.SeedPrice;
                 var c = crop;
-                var card = Button(cards, new Vector2(0.5f, 0.5f), new Vector2(x0 + i * (w + gap), 0), new Vector2(w, 160),
+                var card = Button(cards, new Vector2(0.5f, 0.5f), new Vector2((Texts.Rtl ? -1 : 1) * (x0 + i * (w + gap)), 0), new Vector2(w, 160),
                     locked ? new Color(0.82f, 0.8f, 0.76f) : Color.white, () => PickSeed(c));
                 card.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 0.5f);
                 var sw = Img(card, _circle, locked ? new Color(0.6f, 0.6f, 0.6f) : crop.Color, new Vector2(0.5f, 1), new Vector2(0, -12), new Vector2(54, 54));
@@ -385,7 +385,14 @@ namespace FarmWorld.UI
                     int got = GameState.I.Sell(id, int.MaxValue);
                     if (got > 0) Toast(Fmt("ui_sold", got), 1.6f);
                 });
-                Label(sell, Texts.Get("ui_sell_all") + "  " + total + " " + Texts.Get("ui_coins"), 20, Color.white, TextAnchor.MiddleCenter);
+                // long translations ("Alles verkaufen") shrink to fit the button instead of spilling out
+                var sellText = Label(sell, Texts.Get("ui_sell_all") + "  " + total + " " + Texts.Get("ui_coins"), 20, Color.white, TextAnchor.MiddleCenter);
+                sellText.rectTransform.sizeDelta = new Vector2(-16, 0);
+                sellText.horizontalOverflow = HorizontalWrapMode.Wrap;
+                sellText.verticalOverflow = VerticalWrapMode.Truncate;
+                sellText.resizeTextForBestFit = true;
+                sellText.resizeTextMinSize = 12;
+                sellText.resizeTextMaxSize = 20;
                 y += 70;
                 if (y > 400) break;
             }
