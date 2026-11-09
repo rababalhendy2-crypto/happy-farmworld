@@ -570,8 +570,12 @@ namespace FarmWorld.Core
 
         public bool MissionClaimed(string kind, MissionDef m) => Bucket(kind).claimed.Contains(m.Id);
 
+        /// <summary>Raised for each game event (plant, harvest, feed, collect, produce, sell); the tutorial listens.</summary>
+        public event Action<string> Tracked;
+
         void Track(string ev, string item, int qty)
         {
+            Tracked?.Invoke(ev);
             foreach (var kind in new[] { "daily", "weekly" })
             {
                 var b = Bucket(kind);

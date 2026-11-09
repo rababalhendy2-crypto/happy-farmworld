@@ -91,7 +91,7 @@ namespace FarmWorld.UI
 
             BuildTopBar();
             if (GameState.I != null && GameState.I.Visiting) BuildVisitBar();
-            else { BuildBottomBar(); BuildFriendsButton(); BuildSettingsButton(); BuildGiftButton(); BuildGemsPill(); }
+            else { BuildBottomBar(); BuildFriendsButton(); BuildSettingsButton(); BuildGiftButton(); BuildGemsPill(); BuildTutorial(); }
             BuildSeedSheet();
             BuildStorageWindow();
             BuildToast();
@@ -100,7 +100,7 @@ namespace FarmWorld.UI
 
         void OnDestroy()
         {
-            if (GameState.I != null) { GameState.I.Changed -= RefreshTop; GameState.I.LeveledUp -= OnLevelUp; }
+            if (GameState.I != null) { GameState.I.Changed -= RefreshTop; GameState.I.LeveledUp -= OnLevelUp; GameState.I.Tracked -= OnTracked; }
             var rig = GameRoot.Instance != null ? GameRoot.Instance.CameraRig : null;
             if (rig != null) rig.OnSelect -= OnSelect;
             DayNightCycle.OnTimeChanged -= OnTime;
