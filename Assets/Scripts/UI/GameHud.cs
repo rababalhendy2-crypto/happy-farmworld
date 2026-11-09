@@ -428,7 +428,7 @@ namespace FarmWorld.UI
             _toastGroup.alpha = 0; _toastGroup.blocksRaycasts = false;
         }
 
-        void ErrorToast(string text, float seconds) { Toast(text, seconds); Sound.Play("error", 0.6f); }
+        void ErrorToast(string text, float seconds) { Toast(text, seconds); Sound.Play("error", 0.6f, 0.75f); }
 
         void Toast(string text, float seconds)
         {

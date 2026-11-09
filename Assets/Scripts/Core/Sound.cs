@@ -18,6 +18,8 @@ namespace FarmWorld.Core
         readonly Dictionary<string, float> _last = new();
 
         public static bool SfxOn => PlayerPrefs.GetInt(SfxKey, 1) == 1;
+        /// <summary>False while the game ships without a music track.</summary>
+        public static bool HasMusic => I != null && I._music != null && I._music.clip != null;
         public static bool MusicOn => PlayerPrefs.GetInt(MusicKey, 1) == 1;
 
         void Awake()

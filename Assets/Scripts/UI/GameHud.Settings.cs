@@ -51,9 +51,12 @@ namespace FarmWorld.UI
             var sfx = Button(sound, new Vector2(Texts.Rtl ? 1 : 0, 0.5f), new Vector2(Texts.Rtl ? -170 : 170, 0), new Vector2(210, 46),
                 Sound.SfxOn ? Green : Grey, () => { Sound.SetSfx(!Sound.SfxOn); RefillPanel(); });
             FitLabel(sfx, Texts.Get(Sound.SfxOn ? "ui_effects_on" : "ui_effects_off"), 20);
+            if (Sound.HasMusic)
+            {
             var mus = Button(sound, new Vector2(Texts.Rtl ? 1 : 0, 0.5f), new Vector2(Texts.Rtl ? -400 : 400, 0), new Vector2(210, 46),
                 Sound.MusicOn ? Green : Grey, () => { Sound.SetMusic(!Sound.MusicOn); RefillPanel(); });
             FitLabel(mus, Texts.Get(Sound.MusicOn ? "ui_music_on" : "ui_music_off"), 20);
+            }
             var help = Button(sound, new Vector2(Texts.Rtl ? 1 : 0, 0.5f), new Vector2(Texts.Rtl ? -630 : 630, 0), new Vector2(190, 46),
                 new Color(0.88f, 0.84f, 0.76f), RestartTutorial);
             FitLabel(help, Texts.Get("ui_help_again"), 18).color = Ink;

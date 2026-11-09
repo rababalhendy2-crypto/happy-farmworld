@@ -1,3 +1,4 @@
 Audio credits
-- All sounds and the music (0.7.5 and later) are made for Farm World from code: Tools/audio/soft.py.
-  Soft marimba, music-box and bell tones built from sine waves; no samples, no third-party licence.
+- tap, plant, harvest, collect, confirm, coins, error: Kenney Interface Sounds "drop" set (CC0), kenney.nl
+- levelup: made for Farm World from code (Tools/audio/soft.py)
+- No music for now (0.7.6): Selda is choosing a recorded track.

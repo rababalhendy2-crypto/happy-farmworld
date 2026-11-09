@@ -112,7 +112,7 @@ namespace FarmWorld.UI
 
             _panelFill = fill;
             RefillPanel();
-            Sound.Play("open", 0.6f);
+            // no separate "open" sound: the button tap already plays
             _toastGroup.transform.SetAsLastSibling();
         }
 
