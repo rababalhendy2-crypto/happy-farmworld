@@ -39,14 +39,76 @@ namespace FarmWorld.UI
             _gems = Label(pill, "0", 24, Ink, TextAnchor.MiddleLeft, new Vector2(52, 0), new Vector2(92, 44), new Vector2(0, 0.5f));
         }
 
-        /// <summary>A small diamond: a turned square with a lighter centre.</summary>
+        static Sprite _gemSprite;
+
+        /// <summary>A cut gem: a crown with a flat top and a pointed lower half, each face in its own shade of blue.</summary>
         void Gem(RectTransform parent, Vector2 pos, float size)
         {
-            var holder = Img(parent, null, Color.clear, new Vector2(0, 0.5f), pos, new Vector2(size, size));
-            var d = Img(holder, _round, new Color(0.3f, 0.72f, 0.9f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size * 0.7f, size * 0.7f));
-            d.localRotation = Quaternion.Euler(0, 0, 45);
-            var c = Img(d, _round, new Color(0.7f, 0.92f, 1f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size * 0.3f, size * 0.3f));
-            c.localRotation = Quaternion.identity;
+            if (_gemSprite == null) _gemSprite = MakeGemSprite();
+            var img = Img(parent, _gemSprite, Color.white, new Vector2(0, 0.5f), pos, new Vector2(size, size));
+            img.GetComponent<Image>().preserveAspect = true;
+        }
+
+        static Sprite MakeGemSprite()
+        {
+            const int n = 96, ss = 4;
+            // Faces in unit coordinates (y up), drawn in order; the last one that contains a point wins.
+            Vector2 V(float x, float y) => new Vector2(x, y);
+            var tl = V(0.30f, 0.86f); var tr = V(0.70f, 0.86f); var gl = V(0.06f, 0.62f); var gr = V(0.94f, 0.62f);
+            var ml = V(0.36f, 0.62f); var mr = V(0.64f, 0.62f); var tip = V(0.5f, 0.06f);
+            var faces = new (Vector2[] poly, Color32 col)[]
+            {
+                (new[] { gl, tl, ml }, new Color32(120, 215, 250, 255)),
+                (new[] { tl, tr, mr, ml }, new Color32(170, 236, 255, 255)),
+                (new[] { tr, gr, mr }, new Color32(70, 175, 230, 255)),
+                (new[] { gl, ml, tip }, new Color32(55, 160, 225, 255)),
+                (new[] { ml, mr, tip }, new Color32(90, 190, 240, 255)),
+                (new[] { mr, gr, tip }, new Color32(30, 115, 195, 255)),
+            };
+            var outline = new[] { gl, tl, tr, gr, tip };
+            static bool Inside(Vector2[] poly, Vector2 p)
+            {
+                bool c = false;
+                for (int i = 0, j = poly.Length - 1; i < poly.Length; j = i++)
+                    if ((poly[i].y > p.y) != (poly[j].y > p.y) && p.x < (poly[j].x - poly[i].x) * (p.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x) c = !c;
+                return c;
+            }
+            static float EdgeDist(Vector2[] poly, Vector2 p)
+            {
+                float d = float.MaxValue;
+                for (int i = 0, j = poly.Length - 1; i < poly.Length; j = i++)
+                {
+                    var a = poly[j]; var v = poly[i] - a; float t = Mathf.Clamp01(Vector2.Dot(p - a, v) / v.sqrMagnitude);
+                    d = Mathf.Min(d, Vector2.Distance(p, a + t * v));
+                }
+                return d;
+            }
+            var edge = new Color32(25, 85, 150, 255);
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            var px = new Color32[n * n];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float r = 0, g = 0, b = 0, a = 0;
+                    for (int sy = 0; sy < ss; sy++)
+                        for (int sx = 0; sx < ss; sx++)
+                        {
+                            var p = new Vector2((x + (sx + 0.5f) / ss) / n, (y + (sy + 0.5f) / ss) / n);
+                            if (!Inside(outline, p)) continue;
+                            Color32 c = faces[0].col;
+                            foreach (var f in faces) if (Inside(f.poly, p)) c = f.col;
+                            if (EdgeDist(outline, p) < 0.035f) c = edge;
+                            // A small white glint on the upper left face.
+                            if (Vector2.Distance(p, V(0.27f, 0.74f)) < 0.045f) c = new Color32(255, 255, 255, 255);
+                            r += c.r; g += c.g; b += c.b; a += 255;
+                        }
+                    float k = 1f / (ss * ss);
+                    float al = a * k;
+                    px[y * n + x] = al <= 0 ? new Color32(0, 0, 0, 0)
+                        : new Color32((byte)(r / (a / 255f)), (byte)(g / (a / 255f)), (byte)(b / (a / 255f)), (byte)al);
+                }
+            tex.SetPixels32(px); tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100);
         }
 
         void BuildGiftButton()

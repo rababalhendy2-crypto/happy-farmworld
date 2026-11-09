@@ -8,7 +8,7 @@ namespace FarmWorld.Core
     /// </summary>
     public static class Bootstrap
     {
-        public const string Version = "0.8.2";
+        public const string Version = "0.8.3";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Init()
@@ -34,6 +34,7 @@ namespace FarmWorld.Core
             QualitySettings.vSyncCount = 0;
             Screen.sleepTimeout = SleepTimeout.SystemSetting;
 
+            gameObject.AddComponent<PerfGuard>();
             var gs = gameObject.AddComponent<GameState>();
             gameObject.AddComponent<Backend>();
             gameObject.AddComponent<Sound>();
