@@ -1,0 +1,6 @@
+Characters and pets, CC0 1.0 (public domain), no attribution required:
+- Boy: Kenney "Mini Characters 1.0" (character-male-f), https://kenney.nl/assets/mini-characters
+  Straw hat added by Farm World. Animations baked to OBJ frames by Tools/models/bake.py.
+- Dog (Shiba Inu), Husky: Quaternius "Animated Animal Pack", https://quaternius.com
+- Cat: Quaternius (Poly Pizza, CC0), https://poly.pizza/u/Quaternius
+Source: @netforge/asset-library-files (NOTICE lists each pack and where its CC0 licence was verified).

@@ -10,7 +10,7 @@ namespace FarmWorld.World
     /// main farm (centre), village (north), market (east), forest and lake (west),
     /// production area (south) and locked expansion lands at the corners.
     /// </summary>
-    public class WorldBuilder : MonoBehaviour
+    public partial class WorldBuilder : MonoBehaviour
     {
         public Rect PlayableBounds => new Rect(-42f, -40f, 84f, 82f);
         public Vector3 FarmCenter => new Vector3(0f, 0f, 0f);
@@ -161,85 +161,9 @@ namespace FarmWorld.World
 
         void BuildFarm()
         {
-            var farm = new GameObject("Zone_Farm").transform; farm.SetParent(_static, false);
-            Building("house", "House_1.obj", new Vector3(-7f, 0, 9f), 6.5f, 180f, "bld_house");
-            Building("barn", "Stable.obj", new Vector3(9f, 0, 9f), 7.5f, 180f, "bld_barn");
-            BuildCoop(new Vector3(-12f, 0, -4f));
-            BuildSilo(new Vector3(13.5f, 0, 9.5f));
-
-            // Six starter fields in a 3 × 2 grid. What grows on them comes from the save (Farming.FieldPlot).
-            for (int i = 0; i < 6; i++)
-            {
-                var p = new Vector3(-4.6f + (i % 3) * 4.6f, 0, -1.5f - (i / 3) * 4.4f);
-                BuildField(i, p);
-            }
-
-            // Animal pen east of the fields
-            var pen = new Rect(8f, -11f, 9f, 9f);
-            Fence(pen, Hex("#f4efe6"));
-            Prim(PrimitiveType.Cube, _static, new Vector3(16f, 0.25f, -3.5f), new Vector3(0.6f, 0.5f, 2.2f), Hex("#8a5a36"));
-            Prim(PrimitiveType.Cube, _static, new Vector3(16f, 0.47f, -3.5f), new Vector3(0.45f, 0.06f, 2.0f), Hex("#5cc3f0"));
-            ModelLibrary.Spawn("Village/Hay.obj", _static, new Vector3(9.4f, 0, -10f), 1.0f, Fit.Height, 25f);
-            Animal("Animals/Cow", new Vector3(11f, 0, -5f), 2.0f, pen, "animal_cow");
-            Animal("Animals/Cow", new Vector3(14f, 0, -8f), 2.0f, pen, "animal_cow");
-            Animal("Animals/Sheep", new Vector3(10f, 0, -9f), 1.3f, pen, "animal_sheep");
-            Animal("Animals/Sheep", new Vector3(13f, 0, -4f), 1.3f, pen, "animal_sheep");
-            var coopYard = new Rect(-16f, -10f, 7f, 4.5f);
-            Fence(coopYard, Hex("#d9b98a"));
-            for (int i = 0; i < 4; i++)
-                Animal("Animals/Chick", new Vector3(R(-15f, -10f), 0, R(-9.5f, -6.5f)), 0.75f, coopYard, "animal_chicken");
-
-            // Garden details around the house
-            for (int i = 0; i < 6; i++)
-                ModelLibrary.Spawn("Nature/Flower_" + (i % 2 == 0 ? "3" : "4") + "_Group", _static,
-                    new Vector3(-10.5f + i * 1.3f, 0, 5.6f), 0.55f, Fit.Height, R(0, 360), null, false);
-            ModelLibrary.Spawn("Village/Well.obj", _static, new Vector3(-2.5f, 0, 6.5f), 2.2f, Fit.Footprint);
-            ModelLibrary.Spawn("Village/Cart.obj", _static, new Vector3(4.2f, 0, 6.8f), 2.2f, Fit.Footprint, 70f);
-            ModelLibrary.Spawn("Village/Bench_1.obj", _static, new Vector3(-4.6f, 0, 6.4f), 1.6f, Fit.Footprint, 0f);
-            ModelLibrary.Spawn("Village/Barrel.obj", _static, new Vector3(5.6f, 0, 8.6f), 0.9f, Fit.Height);
-            ModelLibrary.Spawn("Village/Crate.obj", _static, new Vector3(6.2f, 0, 7.6f), 0.8f, Fit.Height, 20f);
-            Fence(new Rect(-17.5f, -14f, 35f, 27f), Hex("#a87a4f"), 4.5f);
-        }
-
-        void BuildField(int index, Vector3 pos)
-        {
-            var root = new GameObject("Field_" + index); root.transform.SetParent(_static, false); root.transform.localPosition = pos;
-            Prim(PrimitiveType.Cube, root.transform, new Vector3(0, 0.12f, 0), new Vector3(4f, 0.24f, 3.8f), Hex("#7a4b2c"));
-            for (int r = 0; r < Farming.FieldPlot.Rows; r++)
-                Prim(PrimitiveType.Cube, root.transform, new Vector3(0, 0.27f, Farming.FieldPlot.RowZ(r)), new Vector3(3.6f, 0.08f, 0.4f), Hex("#5e3720"));
-            var sel = Selectable.Make(root, "field_" + index, "field", "field");
-            // The collider must also cover tall crops planted later.
-            var col = root.GetComponent<BoxCollider>();
-            col.center = new Vector3(0, 0.9f, 0); col.size = new Vector3(4.2f, 1.8f, 4.0f);
-            root.AddComponent<Farming.FieldPlot>().Index = index;
-            Fields.Add(sel);
-        }
-
-        void BuildCoop(Vector3 p)
-        {
-            var root = new GameObject("coop"); root.transform.SetParent(_static, false); root.transform.localPosition = p;
-            var t = root.transform;
-            Prim(PrimitiveType.Cube, t, new Vector3(0, 1.1f, 0), new Vector3(3.2f, 1.6f, 2.4f), Hex("#e9d3a6"));
-            for (int i = 0; i < 5; i++)
-                Prim(PrimitiveType.Cube, t, new Vector3(-1.28f + i * 0.64f, 1.1f, 1.22f), new Vector3(0.08f, 1.6f, 0.04f), Hex("#b98b5c"));
-            Prim(PrimitiveType.Cube, t, new Vector3(0, 2.25f, 0.62f), new Vector3(3.7f, 0.12f, 1.55f), Hex("#b5452f"), new Vector3(-28, 0, 0));
-            Prim(PrimitiveType.Cube, t, new Vector3(0, 2.25f, -0.62f), new Vector3(3.7f, 0.12f, 1.55f), Hex("#b5452f"), new Vector3(28, 0, 0));
-            Prim(PrimitiveType.Cube, t, new Vector3(0, 0.75f, 1.24f), new Vector3(0.6f, 0.7f, 0.05f), Hex("#4a2e1a"));
-            Prim(PrimitiveType.Cube, t, new Vector3(0, 0.3f, 1.8f), new Vector3(0.5f, 0.06f, 1.2f), Hex("#9b7048"), new Vector3(-20, 0, 0));
-            foreach (var x in new[] { -1.4f, 1.4f })
-                foreach (var z in new[] { -1f, 1f })
-                    Prim(PrimitiveType.Cube, t, new Vector3(x, 0.15f, z), new Vector3(0.18f, 0.3f, 0.18f), Hex("#6e4a2c"));
-            Selectable.Make(root, "coop", "building", "bld_coop");
-        }
-
-        void BuildSilo(Vector3 p)
-        {
-            var root = new GameObject("silo"); root.transform.SetParent(_static, false); root.transform.localPosition = p;
-            Prim(PrimitiveType.Cylinder, root.transform, new Vector3(0, 2.6f, 0), new Vector3(2.4f, 2.6f, 2.4f), Hex("#d7d2c8"));
-            for (int i = 0; i < 4; i++)
-                Prim(PrimitiveType.Cylinder, root.transform, new Vector3(0, 0.9f + i * 1.25f, 0), new Vector3(2.46f, 0.05f, 2.46f), Hex("#9aa0a6"));
-            Prim(PrimitiveType.Sphere, root.transform, new Vector3(0, 5.2f, 0), new Vector3(2.45f, 1.6f, 2.45f), Hex("#b5452f"));
-            Selectable.Make(root, "silo", "building", "bld_silo");
+            // Everything on the farm itself comes from the saved layout (WorldBuilder.Layout.cs), so it can be moved.
+            BuildLayoutRoot();
+            SyncLayout();
         }
 
         void Fence(Rect r, Color c, float spacing = 1.5f)
@@ -259,23 +183,6 @@ namespace FarmWorld.World
             var p2 = new Vector3(r.xMax, 0, r.yMax); var p3 = new Vector3(r.xMin, 0, r.yMax);
             Side(p0, p1); Side(p1, p2); Side(p2, p3); Side(p3, p0);
         }
-
-        void Animal(string model, Vector3 pos, float length, Rect area, string titleKey)
-        {
-            var a = ModelLibrary.Spawn(model, _life, pos, length, Fit.Length, R(0, 360));
-            if (a == null) return;
-            var w = a.AddComponent<AnimalWander>();
-            w.Area = new Rect(area.xMin + 0.8f, area.yMin + 0.8f, area.width - 1.6f, area.height - 1.6f);
-            w.Speed = length < 1f ? 0.9f : 0.55f;
-            Selectable.Make(a, titleKey, "animal", titleKey);
-            string type = titleKey.Replace("animal_", "");
-            _animalCount.TryGetValue(type, out int n);
-            _animalCount[type] = n + 1;
-            var unit = a.AddComponent<Farming.AnimalUnit>();
-            unit.Id = type + "_" + n; unit.Type = type; unit.Height = Mathf.Max(0.5f, length * 0.6f);
-        }
-
-        readonly Dictionary<string, int> _animalCount = new();
 
         // ------------------------------------------------------------------ other regions
 
@@ -372,12 +279,14 @@ namespace FarmWorld.World
                 var p = new Vector3(R(-40f, 40f), 0, R(-38f, 42f));
                 bool clear = true;
                 foreach (var z in ZoneCenters.Values) if ((p - z).magnitude < 15f) clear = false;
+                if (Layout.Area.Overlaps(new Rect(p.x - 4f, p.z - 4f, 8f, 8f))) clear = false;
                 if (clear) Tree(p, R(4.5f, 7f));
             }
             for (int i = 0; i < 120; i++)
             {
                 var p = new Vector3(R(-45f, 45f), 0, R(-42f, 45f));
                 if (Mathf.Abs(p.x) < 18f && Mathf.Abs(p.z) < 15f) continue;
+                if (Layout.Area.Contains(new Vector2(p.x, p.z))) continue;
                 ModelLibrary.Spawn(i % 4 == 0 ? "Nature/Clover_1" : "Nature/Grass_Common_Short", _static, p, R(0.25f, 0.45f), Fit.Height, R(0, 360), null, false);
             }
         }

@@ -72,7 +72,7 @@ namespace FarmWorld.UI
             foreach (var f in _floaters) if (f.label != null) Destroy(f.label.gameObject);
             _floaters.Clear();
             _seedField = -1;
-            EndTool();
+            EndTool(); EndEdit(); CancelPlacing();
             _panel = null; _panelFill = null; _timers.Clear();
             if (_canvas != null) Destroy(_canvas.gameObject);
             BuildUi();
@@ -93,7 +93,7 @@ namespace FarmWorld.UI
 
             BuildTopBar();
             if (GameState.I != null && GameState.I.Visiting) BuildVisitBar();
-            else { BuildBottomBar(); BuildFriendsButton(); BuildSettingsButton(); BuildGiftButton(); BuildGemsPill(); BuildTutorial(); }
+            else { BuildBottomBar(); BuildFriendsButton(); BuildSettingsButton(); BuildGiftButton(); BuildGemsPill(); BuildTutorial(); BuildBuildButtons(); }
             BuildSeedSheet();
             BuildStorageWindow();
             BuildToast();
@@ -177,7 +177,9 @@ namespace FarmWorld.UI
         {
             CloseSeeds();
             EndTool();   // a tap that no tool took (grass, a growing field, a building) puts the tool away
+            if (!GameState.I.Visiting && EditTap(s)) return;
             if (s == null) { _selection.text = ""; return; }
+            if (s.Kind == "farmer") { Toast(Texts.Get("ui_farmer_hello"), 2.5f); return; }
             if (GameState.I.Visiting) { VisitTap(s); return; }
             var drop = s.GetComponent<ProductDrop>();
             if (drop != null && drop.Unit != null) { OnAnimal(drop.Unit, drop.Unit.GetComponent<Selectable>()); return; }

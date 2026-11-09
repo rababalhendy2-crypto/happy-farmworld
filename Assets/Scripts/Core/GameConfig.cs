@@ -99,6 +99,7 @@ namespace FarmWorld.Core
             object root = ta != null ? MiniJson.Parse(ta.text) : null;
             if (root == null) Debug.LogWarning("[GameConfig] game_config.json missing – using defaults");
 
+            Layout.Load(root);
             var eco = MiniJson.O(root, "economy");
             StartCoins = (int)MiniJson.N(eco, "start_coins", StartCoins);
             StartingPlots = (int)MiniJson.N(eco, "starting_plots", StartingPlots);

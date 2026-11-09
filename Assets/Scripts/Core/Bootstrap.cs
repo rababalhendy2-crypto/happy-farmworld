@@ -8,7 +8,7 @@ namespace FarmWorld.Core
     /// </summary>
     public static class Bootstrap
     {
-        public const string Version = "0.7.8";
+        public const string Version = "0.8.0";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Init()
@@ -51,8 +51,10 @@ namespace FarmWorld.Core
             new GameObject("Hud").AddComponent<UI.GameHud>();
 
             // the server's state replaced the local one: redraw crops and animals
+            gs.LayoutChanged += World.SyncLayout;
             gs.ServerApplied += () =>
             {
+                World.SyncLayout();
                 foreach (var f in World.Fields) if (f != null) f.GetComponent<Farming.FieldPlot>()?.Refresh(false);
                 foreach (var a in Object.FindObjectsByType<Farming.AnimalUnit>(FindObjectsSortMode.None)) a.Refresh(false);
             };

@@ -38,6 +38,8 @@ namespace FarmWorld.Core
         public int gems;
         /// <summary>Daily gift: last UTC day number it was claimed and how many were claimed so far (server owned).</summary>
         public int dailyLastDay = -1, dailyStep;
+        /// <summary>Where every field, building, fence, tree, decoration and pet stands (empty = the default farm).</summary>
+        public List<PlacedItem> layout = new();
     }
 
     /// <summary>
@@ -67,6 +69,7 @@ namespace FarmWorld.Core
             _path = Path.Combine(Application.persistentDataPath, "farmworld_save.json");
             Data = LoadOrNew();
             while (Data.plots.Count < GameConfig.StartingPlots) Data.plots.Add(new PlotSave());
+            EnsureLayout(Data);
             _nextSave = Time.unscaledTime + GameConfig.AutosaveSeconds;
         }
 
@@ -98,11 +101,16 @@ namespace FarmWorld.Core
             try { if (File.Exists(_path)) File.Delete(_path); } catch (Exception e) { Debug.LogWarning("[GameState] " + e.Message); }
             Data = LoadOrNew();
             while (Data.plots.Count < GameConfig.StartingPlots) Data.plots.Add(new PlotSave());
+            EnsureLayout(Data);
             FriendCode = "";
             Save();
             ServerApplied?.Invoke();
             Changed?.Invoke();
         }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        [System.Runtime.InteropServices.DllImport("__Internal")] static extern void FW_SyncFiles();
+#endif
 
         public void Save()
         {
@@ -112,9 +120,9 @@ namespace FarmWorld.Core
                 own.savedUtc = Now;
                 File.WriteAllText(_path, JsonUtility.ToJson(own));
 #if UNITY_WEBGL && !UNITY_EDITOR
-                // In the browser, files live in memory until the file system is synced to IndexedDB.
-                // PlayerPrefs.Save() triggers that sync; without it a reload loses everything since the last sync.
-                PlayerPrefs.Save();
+                // In the browser, files live in memory until the file system is synced to IndexedDB
+                // (Plugins/WebGL/FileSync.jslib); without it a reload loses everything since the last sync.
+                FW_SyncFiles();
 #endif
                 _dirty = false;
             }
@@ -615,6 +623,81 @@ namespace FarmWorld.Core
             return n;
         }
 
+        // ------------------------------------------------------------- farm layout (build and move)
+
+        /// <summary>Raised when something was built, moved or sold, so the world redraws that piece.</summary>
+        public event Action LayoutChanged;
+
+        /// <summary>Default farm when nothing is stored, and a field for every plot that has none (e.g. old expansions).</summary>
+        public static void EnsureLayout(SaveData d)
+        {
+            if (d.layout == null || d.layout.Count == 0) d.layout = Layout.DefaultCopy();
+            var used = new HashSet<int>();
+            foreach (var it in d.layout) if (it.t == "field" && it.p >= 0) used.Add(it.p);
+            for (int i = 0; i < d.plots.Count; i++)
+            {
+                if (used.Contains(i)) continue;
+                // same id and spot on every device, so the server can adopt it when it is first moved
+                float x = Layout.Area.xMin + 3f + (i % 8) * 4.6f, z = Layout.Area.yMin + 3f + (i / 8) * 4.4f;
+                d.layout.Add(new PlacedItem { u = "auto_p" + i, t = "field", x = x, z = z, r = 0, p = i });
+            }
+        }
+
+        public PlacedItem Item(string u) => Data.layout.Find(i => i.u == u);
+
+        public void MoveItem(PlacedItem it, float x, float z, int r)
+        {
+            if (Visiting || it == null) return;
+            it.x = x; it.z = z; it.r = ((r % 4) + 4) % 4;
+            Send("move_item", $"{{\"u\":{Q(it.u)},\"x\":{F(x)},\"z\":{F(z)},\"r\":{it.r}}}");
+            Touch();
+            LayoutChanged?.Invoke();
+        }
+
+        public enum BuildResult { Ok, Locked, NoCoins, Max }
+
+        public BuildResult CanBuy(BuildItemDef def)
+        {
+            if (Data.level < def.Level) return BuildResult.Locked;
+            if (Layout.Count(Data.layout, def.Id) >= def.Max) return BuildResult.Max;
+            if (Data.coins < Layout.Price(Data.layout, def)) return BuildResult.NoCoins;
+            return BuildResult.Ok;
+        }
+
+        public BuildResult BuyItem(BuildItemDef def, float x, float z, int r, out PlacedItem it)
+        {
+            it = null;
+            if (Visiting || !def.Sale) return BuildResult.Locked;
+            var can = CanBuy(def);
+            if (can != BuildResult.Ok) return can;
+            int price = Layout.Price(Data.layout, def);
+            if (!Spend(price)) return BuildResult.NoCoins;
+            it = new PlacedItem { u = def.Id + "_" + Guid.NewGuid().ToString("N").Substring(0, 8), t = def.Id, x = x, z = z, r = ((r % 4) + 4) % 4 };
+            if (def.Cat == "field") { Data.plots.Add(new PlotSave()); it.p = Data.plots.Count - 1; }
+            Data.layout.Add(it);
+            Track("build", def.Id, 1);
+            Send("buy_item", $"{{\"id\":{Q(def.Id)},\"u\":{Q(it.u)},\"x\":{F(x)},\"z\":{F(z)},\"r\":{it.r}}}");
+            Touch();
+            LayoutChanged?.Invoke();
+            return BuildResult.Ok;
+        }
+
+        /// <summary>Half the price back for something bought (fields and the farm's own buildings stay).</summary>
+        public static int SellValue(BuildItemDef def) => def.Cost / 2;
+
+        public bool SellItem(PlacedItem it)
+        {
+            if (Visiting || it == null || !Layout.Items.TryGetValue(it.t, out var def) || !def.Sale || def.Cat == "field") return false;
+            Data.layout.Remove(it);
+            AddCoins(SellValue(def));
+            Send("sell_item", $"{{\"u\":{Q(it.u)}}}");
+            Touch();
+            LayoutChanged?.Invoke();
+            return true;
+        }
+
+        static string F(float v) => v.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+
         // ------------------------------------------------------------- server state
 
         /// <summary>Index of a Unity animal (cow_1) in the server's animal list (config world.animals).</summary>
@@ -718,6 +801,7 @@ namespace FarmWorld.Core
         /// <summary>Plots, animals and workshops from a server farm (own state or a friend's visit).</summary>
         static void ReadFarm(SaveData d, Dictionary<string, object> s)
         {
+
             var plots = MiniJson.A(s, "plots");
             if (plots != null)
             {
@@ -764,6 +848,14 @@ namespace FarmWorld.Core
                     d.workshops.Add(w);
                 }
             }
+
+            // null on the server = the farm was never rearranged: the default farm
+            if (s.TryGetValue("layout", out var lay))
+            {
+                d.layout = new List<PlacedItem>();
+                if (lay is List<object> list) foreach (var o in list) d.layout.Add(Layout.Parse(o));
+            }
+            EnsureLayout(d);
         }
 
         // ------------------------------------------------------------- friend visits (read-only)
@@ -792,6 +884,7 @@ namespace FarmWorld.Core
             Data = guest;
             ReadFarm(guest, v);
             while (guest.plots.Count < GameConfig.StartingPlots) guest.plots.Add(new PlotSave());
+            EnsureLayout(guest);
             VisitCode = MiniJson.S(v, "code");
             VisitName = MiniJson.S(v, "display_name");
             VisitLevel = (int)MiniJson.N(v, "level", 1);

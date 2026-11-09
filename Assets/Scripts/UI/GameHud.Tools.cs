@@ -108,6 +108,7 @@ namespace FarmWorld.UI
 
         bool OnStrokeStart(Selectable s, Vector2 screen)
         {
+            if (EditStrokeStart(s, screen)) return true;
             if (_tool == Tool.None || _panel != null || GameState.I.Visiting) return false;
             var plot = s != null ? s.GetComponent<FieldPlot>() : null;
             if (plot == null || !Applies(plot.Index)) return false;
@@ -123,6 +124,7 @@ namespace FarmWorld.UI
 
         void OnStrokeMove(Selectable s, Vector2 screen)
         {
+            if (_drag != null) { EditStrokeMove(screen); return; }
             MoveCursor(screen);
             var plot = s != null ? s.GetComponent<FieldPlot>() : null;
             if (plot != null && _tool != Tool.None && !_strokeDone.Contains(plot.Index) && Applies(plot.Index)) UseOn(plot);
@@ -130,6 +132,7 @@ namespace FarmWorld.UI
 
         void OnStrokeEnd()
         {
+            if (_drag != null) { EditStrokeEnd(); return; }
             if (_toolCursor != null) Destroy(_toolCursor.gameObject);
             _toolCursor = null;
             if (_tool != Tool.None && !AnyTarget()) EndTool();
