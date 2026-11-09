@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using FarmWorld.Core;
+using FarmWorld.Farming;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -172,6 +173,40 @@ namespace FarmWorld.UI
                 if (_panel != null && _panelKind == "gift") RefillPanel();
                 RefreshGemsAndGift();
             });
+        }
+    
+        // ------------------------------------------------------------------ gems: finish a crop now
+
+        void OpenRush(FieldPlot plot)
+        {
+            int idx = plot.Index;
+            OpenPanel(Texts.Get(GameState.I.Plot(idx).crop), new Vector2(640, 300), () => FillRush(plot));
+            _panelKind = "rush";
+        }
+
+        void FillRush(FieldPlot plot)
+        {
+            var gs = GameState.I; int idx = plot.Index;
+            if (gs.Progress(idx) >= 1f) { ClosePanel(); return; }
+            Heading(Texts.Get("ui_ready_in"), 0).alignment = TextAnchor.MiddleCenter;
+            var left = Heading(Duration(gs.SecondsLeft(idx)), 32);
+            left.alignment = TextAnchor.MiddleCenter; left.font = _font; left.fontSize = 28;
+            Countdown(left, () => gs.SecondsLeft(idx));
+            int cost = gs.RushCost(idx);
+            bool can = gs.Data.gems >= cost;
+            var b = Button(_panelBody, new Vector2(0.5f, 1), new Vector2(0, -84), new Vector2(380, 64), can ? Green : Grey, () =>
+            {
+                if (!gs.Rush(idx)) { ErrorToast(Texts.Get("ui_not_enough_gems"), 2.5f); return; }
+                Sound.Play("confirm");
+                plot.Refresh(true);
+                ClosePanel();
+            });
+            var label = FitLabel(b, Texts.Get("ui_finish_now"), 24);
+            label.alignment = TextAnchor.MiddleLeft;
+            label.rectTransform.offsetMin = new Vector2(24, 0); label.rectTransform.offsetMax = new Vector2(-110, 0);
+            Gem(b, new Vector2(286, 0), 34);
+            Label(b, cost.ToString(), 26, Color.white, TextAnchor.MiddleLeft, new Vector2(326, 0), new Vector2(50, 64), new Vector2(0, 0.5f)).font = _font;
+            Note(Fmt("ui_gems_have", gs.Data.gems), 162, 18);
         }
     }
 }

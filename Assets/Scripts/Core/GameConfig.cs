@@ -59,6 +59,8 @@ namespace FarmWorld.Core
     /// <summary>Balance values read from Resources/Data/game_config.json (one source of truth).</summary>
     public static class GameConfig
     {
+        public const int RushSecondsPerGem = 300;   // match cfg.gems.rush_seconds_per_gem on the server
+
         /// <summary>The five MVP crops from the design document, in shop order, with their model names.</summary>
         static readonly (string id, string model)[] MvpCrops =
         {

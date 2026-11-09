@@ -332,6 +332,27 @@ namespace FarmWorld.Core
             return Math.Max(0, p.plantedUtc + c.GrowSeconds - Now);
         }
 
+        /// <summary>Gems to finish a growing crop now: 1 per started 5 minutes left (matches cfg.gems on the server).</summary>
+        public int RushCost(int index)
+        {
+            long left = SecondsLeft(index);
+            return left <= 0 ? 0 : (int)Math.Max(1, (left + GameConfig.RushSecondsPerGem - 1) / GameConfig.RushSecondsPerGem);
+        }
+
+        /// <summary>Finishes a growing crop at once for gems. The server checks the price again.</summary>
+        public bool Rush(int index)
+        {
+            var p = Plot(index);
+            if (p == null || string.IsNullOrEmpty(p.crop) || !GameConfig.CropById.TryGetValue(p.crop, out var c)) return false;
+            int cost = RushCost(index);
+            if (cost == 0 || Data.gems < cost) return false;
+            Data.gems -= cost;
+            p.plantedUtc = Now - c.GrowSeconds;
+            Send("rush_plot", $"{{\"idx\":{index}}}");
+            Touch();
+            return true;
+        }
+
         public enum HarvestResult { Ok, NotReady, StorageFull, Empty }
 
         public HarvestResult Harvest(int index, out CropDef crop)

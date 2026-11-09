@@ -195,7 +195,8 @@ namespace FarmWorld.UI
 
             if (gs.Progress(plot.Index) < 1f)
             {
-                Toast(Fmt("ui_growing", Texts.Get(save.crop), Duration(gs.SecondsLeft(plot.Index))), 2f);
+                if (Backend.I != null && Backend.I.Enabled && gs.Data.serverLinked) OpenRush(plot);
+                else Toast(Fmt("ui_growing", Texts.Get(save.crop), Duration(gs.SecondsLeft(plot.Index))), 2f);
                 return;
             }
             switch (gs.Harvest(plot.Index, out var crop))
