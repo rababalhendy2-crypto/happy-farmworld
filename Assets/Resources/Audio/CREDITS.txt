@@ -1,5 +1,3 @@
 Audio credits
-- tap, open, close, error, confirm, plant, harvest, collect: Kenney Interface Sounds (CC0), kenney.nl
-- coins: Kenney RPG Audio (CC0)
-- levelup: Kenney Music Jingles (CC0)
-- music_farm, cow, sheep, chicken: made for Farm World from code (Tools/audio/synth.py)
+- All sounds and the music (0.7.5 and later) are made for Farm World from code: Tools/audio/soft.py.
+  Soft marimba, music-box and bell tones built from sine waves; no samples, no third-party licence.
