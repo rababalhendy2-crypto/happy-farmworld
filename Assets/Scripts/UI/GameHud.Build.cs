@@ -265,10 +265,10 @@ namespace FarmWorld.UI
                         .horizontalOverflow = HorizontalWrapMode.Wrap;
                 else
                 {
-                    var coin = Img(card, _circle, Gold, new Vector2(0.5f, 0), new Vector2(-34, 14), new Vector2(24, 24));
+                    var coin = Img(card, _circle, Gold, new Vector2(0.5f, 0), new Vector2(-30, 14), new Vector2(24, 24));
                     Img(coin, _circle, new Color(1f, 0.88f, 0.45f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(14, 14));
                     var pl = Label(card, price.ToString("N0"), 22, can == GameState.BuildResult.NoCoins ? Lack : Ink, TextAnchor.MiddleLeft,
-                        new Vector2(-16, 12), new Vector2(90, 28), new Vector2(0.5f, 0));
+                        new Vector2(32, 12), new Vector2(90, 28), new Vector2(0.5f, 0));
                     pl.font = _font;
                 }
             }
@@ -384,7 +384,7 @@ namespace FarmWorld.UI
             raw.color = dim ? new Color(0.6f, 0.6f, 0.6f) : Color.white;
             if (!_thumbs.TryGetValue(def.Id, out var tex))
             {
-                tex = new RenderTexture(160, 160, 16, RenderTextureFormat.ARGB32) { name = "Thumb_" + def.Id, antiAliasing = 2 };
+                tex = new RenderTexture(160, 160, 24, RenderTextureFormat.ARGB32) { name = "Thumb_" + def.Id, antiAliasing = 1 };
                 tex.Create();
                 _thumbs[def.Id] = tex;
                 _thumbQueue.Enqueue(def);
@@ -428,15 +428,33 @@ namespace FarmWorld.UI
                 var rot = Quaternion.Euler(30f, 45f, 0f);
                 _thumbCam.transform.SetPositionAndRotation(centre - rot * Vector3.forward * (radius * 4f + 2f), rot);
                 _thumbCam.orthographicSize = radius * 1.05f;
-                _thumbCam.targetTexture = tex;
-                _thumbCam.enabled = true;
-                yield return new WaitForEndOfFrame();
-                yield return null;
-                _thumbCam.enabled = false;
-                _thumbCam.targetTexture = null;
+                RenderThumb(tex);
+                piece.gameObject.SetActive(false);
                 Destroy(piece.gameObject);
+                yield return null;
             }
             _thumbBusy = false;
+        }
+
+        /// <summary>Renders the thumb camera straight into the texture. A camera that is only switched on for a frame
+        /// was skipped by URP on WebGL (empty tiles in 0.8.1), so the render is requested explicitly.</summary>
+        void RenderThumb(RenderTexture tex)
+        {
+            bool done = false;
+            try
+            {
+                var req = new UnityEngine.Rendering.RenderPipeline.StandardRequest { destination = tex };
+                if (UnityEngine.Rendering.RenderPipeline.SupportsRenderRequest(_thumbCam, req))
+                {
+                    UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(_thumbCam, req);
+                    done = true;
+                }
+            }
+            catch (System.Exception e) { Debug.LogWarning("[Thumb] request: " + e.Message); }
+            if (done) return;
+            _thumbCam.targetTexture = tex;
+            _thumbCam.Render();
+            _thumbCam.targetTexture = null;
         }
     }
 }
