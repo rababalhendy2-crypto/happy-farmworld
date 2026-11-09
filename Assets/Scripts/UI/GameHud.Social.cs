@@ -104,8 +104,9 @@ namespace FarmWorld.UI
             var mine = Row(0, 74, RowColor);
             RowText(mine, Texts.Get("ui_my_code"), 22, Ink, 16, 300);
             var code = Label(mine, MiniJson.S(_friends, "code"), 34, Have, TextAnchor.MiddleCenter,
-                new Vector2(rtl ? 180 : -180, 0), new Vector2(260, 74), new Vector2(rtl ? 0 : 1, 0.5f));
+                new Vector2(rtl ? -40 : 40, 0), new Vector2(240, 74), new Vector2(0.5f, 0.5f));
             code.font = _font;
+            RowButton(mine, Texts.Get("ui_my_stall"), 200, Orange, OpenStall);
             Heading(Texts.Get("ui_code_hint"), 80).fontSize = 18;
 
             // add by code
@@ -284,7 +285,7 @@ namespace FarmWorld.UI
             string name = gs.VisitName;
             string titleText = string.IsNullOrEmpty(name) || name == "Farmer" ? Texts.Get("ui_friend_farm") : Fmt("ui_farm_of", name);
             var title = Label(bar, titleText, 26, Ink, rtl ? TextAnchor.UpperRight : TextAnchor.UpperLeft,
-                new Vector2(rtl ? -20 : 20, -6), new Vector2(400, 40), new Vector2(rtl ? 1 : 0, 1));
+                new Vector2(rtl ? -20 : 20, -6), new Vector2(360, 40), new Vector2(rtl ? 1 : 0, 1));
             title.horizontalOverflow = HorizontalWrapMode.Wrap; title.resizeTextForBestFit = true; title.resizeTextMinSize = 14; title.resizeTextMaxSize = 26;
             // second line: level, likes and the friend code, each in its own label so Arabic and Latin never mix
             float lx = 20;
@@ -299,11 +300,12 @@ namespace FarmWorld.UI
 
             // buttons from the far edge: Home, Gift, Like
             float x = 14;
-            VisitButton(bar, Texts.Get("ui_home"), 220, ref x, Orange, GoHome);
-            VisitButton(bar, gs.VisitGifted ? Texts.Get("ui_gifted") : Fmt("ui_gift", GameConfig.GiftCoins), 240, ref x,
+            VisitButton(bar, Texts.Get("ui_home"), 190, ref x, Orange, GoHome);
+            VisitButton(bar, gs.VisitGifted ? Texts.Get("ui_gifted") : Fmt("ui_gift", GameConfig.GiftCoins), 200, ref x,
                 gs.VisitGifted ? Grey : Gold, () => Social("gift"));
-            VisitButton(bar, gs.VisitLiked ? Texts.Get("ui_liked") : Texts.Get("ui_like"), 200, ref x,
+            VisitButton(bar, gs.VisitLiked ? Texts.Get("ui_liked") : Texts.Get("ui_like"), 160, ref x,
                 gs.VisitLiked ? Grey : Red, () => Social("like"));
+            VisitButton(bar, Texts.Get("ui_shop"), 170, ref x, Green, OpenShop);
         }
 
         void VisitButton(RectTransform bar, string text, float w, ref float x, Color color, System.Action onClick)

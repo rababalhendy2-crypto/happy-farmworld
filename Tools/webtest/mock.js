@@ -11,6 +11,9 @@ const friendFarm = { code: 'SAM742', display_name: 'Farmer', level: 5, likes: 7,
   animals: animals(true), liked: false, gifted: false };
 let friends = [{ code: 'SAM742', name: 'Farmer', level: 5, state: 'friend', liked: false, gifted: false }, { code: 'NAD477', name: 'Farmer', level: 2, state: 'incoming', liked: false, gifted: false }];
 let giftsShown = false;
+let myOffers = [{ id: 1, item: 'egg', qty: 2, unit_price: 16 }];
+let friendOffers = [{ id: 11, item: 'milk', qty: 2, unit_price: 20 }, { id: 12, item: 'pumpkin', qty: 1, unit_price: 90 }, { id: 13, item: 'bread', qty: 3, unit_price: 100 }];
+let nextId = 20;
 const log = [];
 function state() { return Object.assign({}, me, { server_time: now(), version: 1 }); }
 function handle(path, body) {
@@ -40,6 +43,25 @@ function handle(path, body) {
       if (!f) return { ok: false, error: 'not_found' };
       if (body.p_accept) f.state = 'friend'; else friends = friends.filter(x => x != f);
       return { ok: true, error: '' };
+    }
+    case 'hf_market_offers': return { ok: true, offers: body.p_code ? friendOffers : myOffers };
+    case 'hf_market_list': {
+      if (myOffers.length >= 4) return { ok: false, error: 'full' };
+      if ((me.inventory[body.p_item] || 0) < body.p_qty) return { ok: false, error: 'missing_items' };
+      me.inventory[body.p_item] -= body.p_qty;
+      myOffers.push({ id: nextId++, item: body.p_item, qty: body.p_qty, unit_price: body.p_unit_price });
+      return { ok: true, error: '', offers: myOffers, state: state() };
+    }
+    case 'hf_market_cancel': {
+      const o = myOffers.find(x => x.id == body.p_id); if (!o) return { ok: false, error: 'not_found' };
+      myOffers = myOffers.filter(x => x != o); me.inventory[o.item] = (me.inventory[o.item] || 0) + o.qty;
+      return { ok: true, error: '', offers: myOffers, state: state() };
+    }
+    case 'hf_market_buy': {
+      const o = friendOffers.find(x => x.id == body.p_id); if (!o) return { ok: false, error: 'gone' };
+      const total = o.qty * o.unit_price; if (me.coins < total) return { ok: false, error: 'no_coins' };
+      friendOffers = friendOffers.filter(x => x != o); me.coins -= total; me.inventory[o.item] = (me.inventory[o.item] || 0) + o.qty;
+      return { ok: true, error: '', item: o.item, qty: o.qty, coins: total, state: state() };
     }
     case 'hf_visit': return Object.assign({ ok: true, server_time: now() }, friendFarm);
     case 'hf_social': {

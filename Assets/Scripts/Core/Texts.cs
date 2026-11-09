@@ -66,6 +66,11 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> En = new()
         {
+            { "ui_my_stall", "My stall" }, { "ui_stall_hint", "Friends can buy these when they visit you" }, { "ui_coins_n", "{0} coins" },
+            { "ui_stall_full", "Your stall is full (4 offers)" }, { "ui_stall_empty", "Your storage is empty" }, { "ui_new_offer", "New offer" },
+            { "ui_amount_n", "Amount {0}" }, { "ui_unit_price", "{0} coins each" }, { "ui_put_on_sale", "Put on sale for {0} coins" },
+            { "ui_on_sale", "Your offer is in the stall" }, { "ui_offer_gone", "Someone else bought it first" }, { "ui_friend_stall", "Friend's stall" },
+            { "ui_shop_empty", "Nothing for sale right now" }, { "ui_buy_for", "Buy for {0} coins" }, { "ui_bought", "+{0} {1}" }, { "ui_shop", "Stall" },
             { "ui_friends", "Friends" }, { "ui_my_code", "Your friend code" }, { "ui_code_hint", "Share it only with people you know" },
             { "ui_code_placeholder", "Friend code" }, { "ui_add", "Add" }, { "ui_visit", "Visit" }, { "ui_accept", "Accept" }, { "ui_decline", "Decline" },
             { "ui_cancel", "Cancel" }, { "ui_waiting_reply", "Waiting for answer" }, { "ui_wants_friend", "Wants to be friends" },
@@ -114,6 +119,11 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> De = new()
         {
+            { "ui_my_stall", "Mein Stand" }, { "ui_stall_hint", "Freunde können das kaufen, wenn sie dich besuchen" }, { "ui_coins_n", "{0} Münzen" },
+            { "ui_stall_full", "Dein Stand ist voll (4 Angebote)" }, { "ui_stall_empty", "Dein Lager ist leer" }, { "ui_new_offer", "Neues Angebot" },
+            { "ui_amount_n", "Menge {0}" }, { "ui_unit_price", "{0} Münzen pro Stück" }, { "ui_put_on_sale", "Für {0} Münzen anbieten" },
+            { "ui_on_sale", "Dein Angebot liegt im Stand" }, { "ui_offer_gone", "Jemand anderes war schneller" }, { "ui_friend_stall", "Stand des Freundes" },
+            { "ui_shop_empty", "Gerade gibt es nichts zu kaufen" }, { "ui_buy_for", "Für {0} Münzen kaufen" }, { "ui_bought", "+{0} {1}" }, { "ui_shop", "Stand" },
             { "ui_friends", "Freunde" }, { "ui_my_code", "Dein Freundescode" }, { "ui_code_hint", "Gib ihn nur Leuten, die du kennst" },
             { "ui_code_placeholder", "Freundescode" }, { "ui_add", "Hinzufügen" }, { "ui_visit", "Besuchen" }, { "ui_accept", "Annehmen" }, { "ui_decline", "Ablehnen" },
             { "ui_cancel", "Abbrechen" }, { "ui_waiting_reply", "Wartet auf Antwort" }, { "ui_wants_friend", "Möchte befreundet sein" },
@@ -162,6 +172,11 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> Ar = new()
         {
+            { "ui_my_stall", "بسطتي" }, { "ui_stall_hint", "يستطيع أصدقاؤك شراء هذه عند زيارتك" }, { "ui_coins_n", "{0} عملة" },
+            { "ui_stall_full", "البسطة ممتلئة، الحد 4 عروض" }, { "ui_stall_empty", "المخزن فارغ" }, { "ui_new_offer", "عرض جديد" },
+            { "ui_amount_n", "الكمية {0}" }, { "ui_unit_price", "{0} عملة للقطعة" }, { "ui_put_on_sale", "اعرضه للبيع بـ {0} عملة" },
+            { "ui_on_sale", "عرضك صار في البسطة" }, { "ui_offer_gone", "اشتراه شخص آخر قبلك" }, { "ui_friend_stall", "بسطة صديقك" },
+            { "ui_shop_empty", "لا يوجد شيء للبيع الآن" }, { "ui_buy_for", "اشترِ بـ {0} عملة" }, { "ui_bought", "+{0} {1}" }, { "ui_shop", "البسطة" },
             { "ui_friends", "الأصدقاء" }, { "ui_my_code", "كود الصداقة الخاص بك" }, { "ui_code_hint", "شاركه فقط مع أشخاص تعرفهم" },
             { "ui_code_placeholder", "كود الصديق" }, { "ui_add", "إضافة" }, { "ui_visit", "زيارة" }, { "ui_accept", "قبول" }, { "ui_decline", "رفض" },
             { "ui_cancel", "إلغاء" }, { "ui_waiting_reply", "بانتظار الرد" }, { "ui_wants_friend", "يريد أن يكون صديقك" },

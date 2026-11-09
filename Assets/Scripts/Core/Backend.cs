@@ -76,6 +76,13 @@ namespace FarmWorld.Core
 
         public bool Online => State == Status.Online;
 
+        /// <summary>Applies a state returned by a direct RPC, unless queued actions would be overwritten (then it refetches).</summary>
+        public void ApplyState(Dictionary<string, object> state)
+        {
+            if (_queue.items.Count > 0 || _flushing) Refresh();
+            else Apply(state);
+        }
+
         /// <summary>Fetches the player's latest state again (e.g. after friends sent coins).</summary>
         public void Refresh() { if (Enabled && !_connecting && !_flushing) StartCoroutine(Connect()); }
 
