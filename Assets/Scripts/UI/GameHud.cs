@@ -420,6 +420,11 @@ namespace FarmWorld.UI
         void Toast(string text, float seconds)
         {
             Set(_toast, text);
+            // over an open window the toast moves to the bottom, so it never hides the window's title
+            bool window = _panel != null || (_storageWindow != null && _storageWindow.gameObject.activeSelf);
+            var rt = (RectTransform)_toastGroup.transform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, window ? 0 : 1);
+            rt.anchoredPosition = new Vector2(0, window ? 24 : -90);
             _toastUntil = Time.time + seconds;
             _toastGroup.alpha = 1;
             _selection.text = "";
