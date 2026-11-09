@@ -34,6 +34,10 @@ namespace FarmWorld.Core
         public List<OrderSave> orders = new();
         public List<MissionBucket> missions = new();
         public long savedUtc;
+        /// <summary>Gems (premium currency); only the server grants them.</summary>
+        public int gems;
+        /// <summary>Daily gift: last UTC day number it was claimed and how many were claimed so far (server owned).</summary>
+        public int dailyLastDay = -1, dailyStep;
     }
 
     /// <summary>
@@ -625,6 +629,10 @@ namespace FarmWorld.Core
             Data.xp = (int)MiniJson.N(s, "xp", Data.xp);
             Data.level = Mathf.Max(1, (int)MiniJson.N(s, "level", Data.level));
             Data.storageLevel = (int)MiniJson.N(s, "storage_level", Data.storageLevel);
+            Data.gems = (int)MiniJson.N(s, "premium", Data.gems);
+            var daily = MiniJson.O(s, "daily_reward");
+            if (daily != null) { Data.dailyLastDay = (int)MiniJson.N(daily, "last_day", -1); Data.dailyStep = (int)MiniJson.N(daily, "step", 0); }
+            else if (s.ContainsKey("daily_reward")) { Data.dailyLastDay = -1; Data.dailyStep = 0; }
 
             var inv = MiniJson.O(s, "inventory");
             if (inv != null)

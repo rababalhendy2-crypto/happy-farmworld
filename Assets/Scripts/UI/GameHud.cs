@@ -91,7 +91,7 @@ namespace FarmWorld.UI
 
             BuildTopBar();
             if (GameState.I != null && GameState.I.Visiting) BuildVisitBar();
-            else { BuildBottomBar(); BuildFriendsButton(); BuildSettingsButton(); }
+            else { BuildBottomBar(); BuildFriendsButton(); BuildSettingsButton(); BuildGiftButton(); BuildGemsPill(); }
             BuildSeedSheet();
             BuildStorageWindow();
             BuildToast();
@@ -157,6 +157,7 @@ namespace FarmWorld.UI
         {
             var gs = GameState.I; if (gs == null || _coins == null) return;
             Set(_coins, gs.Data.coins.ToString("N0"));
+            RefreshGemsAndGift();
             _level.text = gs.Data.level.ToString();
             int a = gs.XpForLevel(gs.Data.level), b = gs.XpForLevel(gs.Data.level + 1);
             _xpFill.fillAmount = Mathf.Clamp01((gs.Data.xp - a) / (float)Mathf.Max(1, b - a));

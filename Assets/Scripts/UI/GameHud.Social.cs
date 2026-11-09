@@ -50,6 +50,8 @@ namespace FarmWorld.UI
         /// <summary>Once online: look for friend requests and gifts that arrived while the player was away.</summary>
         void OnBackendStatus(Backend.Status s)
         {
+            if (s == Backend.Status.Online) MaybeShowGift();
+            RefreshGemsAndGift();
             if (s != Backend.Status.Online || _checkedFriends) return;
             _checkedFriends = true;
             LoadFriends();

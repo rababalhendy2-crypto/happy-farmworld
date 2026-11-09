@@ -4,7 +4,7 @@ const layout = ['cow','cow','sheep','sheep','chicken','chicken','chicken','chick
 function animals(producing) { return layout.map((t, i) => ({ type: t, status: producing && i % 2 == 0 ? 'producing' : 'hungry', started_at: now() - (i == 0 ? 99999 : 60), hungry_since: now() - 100, happiness: 80 })); }
 const me = { coins: 250, premium: 0, xp: 40, level: 3, display_name: 'Farmer', friend_code: 'MEF4RM', likes: 2,
   inventory: { wheat: 12, carrot: 4, egg: 2 }, plots: Array.from({ length: 6 }, () => ({ crop: '', planted_at: 0, watered: false })),
-  animals: animals(false), workshops: {}, storage_level: 0, missions: {},
+  animals: animals(false), workshops: {}, storage_level: 0, missions: {}, daily_reward: { last_day: Math.floor(Date.now()/86400000) - 1, step: 6 },
   orders: [{ items: { wheat: 4 }, coins: 23, xp: 2, available_at: 0 }, { items: { egg: 2 }, coins: 20, xp: 2, available_at: 0 }, { items: { carrot: 5 }, coins: 43, xp: 5, available_at: 0 }] };
 const friendFarm = { code: 'SAM742', display_name: 'Farmer', level: 5, likes: 7, storage_level: 1, workshops: { mill: { jobs: [] } },
   plots: [{ crop: 'wheat', planted_at: now() - 5000 }, { crop: 'corn', planted_at: now() - 200 }, { crop: 'carrot', planted_at: now() - 60 }, { crop: 'tomato', planted_at: now() - 9000 }, { crop: 'pumpkin', planted_at: now() - 900 }, { crop: '', planted_at: 0 }],
@@ -30,6 +30,13 @@ function handle(path, body) {
     case 'hf_action': {
       const a = body.p_action, g = body.p_args || {};
       if (a == 'plant') me.plots[g.idx] = { crop: g.crop, planted_at: now(), watered: false };
+      if (a == 'claim_daily') {
+        const day = Math.floor(now() / 86400);
+        if (me.daily_reward.last_day >= day) return { ok: false, error: 'already_done', state: state() };
+        const step = me.daily_reward.step, rw = step % 7 == 6 ? { coins: 100, premium: 2 } : { coins: 30 };
+        me.coins += rw.coins; me.premium += rw.premium || 0; me.daily_reward = { last_day: day, step: step + 1 };
+        return { ok: true, error: '', reward: rw, step, state: state() };
+      }
       return { ok: true, error: '', state: state() };
     }
     case 'hf_friends': {
