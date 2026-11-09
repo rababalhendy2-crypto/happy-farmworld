@@ -109,5 +109,7 @@ namespace FarmWorld.Core
             o is Dictionary<string, object> d && d.TryGetValue(key, out var v) && v is double x ? x : def;
         public static string S(object o, string key, string def = "") =>
             o is Dictionary<string, object> d && d.TryGetValue(key, out var v) && v is string x ? x : def;
+        public static bool B(object o, string key) =>
+            o is Dictionary<string, object> d && d.TryGetValue(key, out var v) && v is bool x && x;
     }
 }

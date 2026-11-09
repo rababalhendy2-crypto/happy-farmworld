@@ -53,6 +53,8 @@ namespace FarmWorld.UI
             if (rig != null) rig.OnSelect += OnSelect;
             DayNightCycle.OnTimeChanged += OnTime;
             Texts.Changed += OnLanguageChanged;
+            Backend.StatusChanged += OnBackendStatus;
+            if (Backend.I != null && Backend.I.Online) OnBackendStatus(Backend.Status.Online);
         }
 
         void OnLevelUp(int lvl) => Toast(Fmt("ui_level_up", lvl, GameConfig.LevelRewardCoins), 3f);
@@ -88,7 +90,8 @@ namespace FarmWorld.UI
             _root = (RectTransform)canvasGo.transform;
 
             BuildTopBar();
-            BuildBottomBar();
+            if (GameState.I != null && GameState.I.Visiting) BuildVisitBar();
+            else { BuildBottomBar(); BuildFriendsButton(); }
             BuildSeedSheet();
             BuildStorageWindow();
             BuildToast();
@@ -102,6 +105,7 @@ namespace FarmWorld.UI
             if (rig != null) rig.OnSelect -= OnSelect;
             DayNightCycle.OnTimeChanged -= OnTime;
             Texts.Changed -= OnLanguageChanged;
+            Backend.StatusChanged -= OnBackendStatus;
         }
 
         // ------------------------------------------------------------------ top / bottom bars
@@ -169,6 +173,7 @@ namespace FarmWorld.UI
         {
             CloseSeeds();
             if (s == null) { _selection.text = ""; return; }
+            if (GameState.I.Visiting) { VisitTap(s); return; }
             var drop = s.GetComponent<ProductDrop>();
             if (drop != null && drop.Unit != null) { OnAnimal(drop.Unit, drop.Unit.GetComponent<Selectable>()); return; }
             var animal = s.GetComponent<AnimalUnit>();

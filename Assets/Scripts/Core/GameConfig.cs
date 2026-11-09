@@ -71,6 +71,7 @@ namespace FarmWorld.Core
         public static readonly Dictionary<string, AnimalDef> AnimalById = new();
         public static int StartHappiness = 70, FeedBonus = 15, HungryDecayPerHour = 5, MinHappiness = 30, BonusThreshold = 85, BonusQty = 1;
         public static int StartCoins = 120;
+        public const int GiftCoins = 10;   // matches cfg.social.gift_coins on the server
         public static int StartingPlots = 6;
         public static int StorageCapacity = 60;
         public static int SellXpPerCoins = 10;

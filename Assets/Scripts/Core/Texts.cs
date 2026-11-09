@@ -66,6 +66,16 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> En = new()
         {
+            { "ui_friends", "Friends" }, { "ui_my_code", "Your friend code" }, { "ui_code_hint", "Share it only with people you know" },
+            { "ui_code_placeholder", "Friend code" }, { "ui_add", "Add" }, { "ui_visit", "Visit" }, { "ui_accept", "Accept" }, { "ui_decline", "Decline" },
+            { "ui_cancel", "Cancel" }, { "ui_waiting_reply", "Waiting for answer" }, { "ui_wants_friend", "Wants to be friends" },
+            { "ui_no_friends", "No friends yet. Share your code!" }, { "ui_online_only", "Friends need an internet connection" },
+            { "ui_loading", "Loading..." }, { "ui_request_sent", "Friend request sent" }, { "ui_friend_added", "You are now friends!" },
+            { "ui_code_not_found", "No farm has this code" }, { "ui_already_sent", "Already sent" }, { "ui_friends_full", "The friend list is full" },
+            { "ui_farm_of", "Farm of {0}" }, { "ui_level_n", "Level {0}" }, { "ui_likes_n", "{0} likes" }, { "ui_like", "Like" }, { "ui_liked", "Liked" },
+            { "ui_gift", "Gift {0} coins" }, { "ui_gifted", "Gift sent" }, { "ui_home", "Back home" }, { "ui_look_only", "This is your friend's farm. You can look around." },
+            { "ui_got_gifts", "Friends sent you {0} gifts!" }, { "ui_got_likes", "Friends liked your farm {0} times" }, { "ui_gift_full", "Your friend got enough gifts today" },
+            { "ui_farmer", "Farmer" }, { "ui_try_again", "That did not work. Try again." }, { "ui_remove", "Remove" },
             { "ui_order_wait", "New order in {0}" }, { "ui_order_coming", "New order coming..." }, { "ui_order_missing", "Not enough goods for this order" },
             { "ui_workshops", "Workshops" }, { "ui_go", "Open" }, { "ui_ready_count", "{0} ready" }, { "ui_working", "Working" },
 
@@ -104,6 +114,16 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> De = new()
         {
+            { "ui_friends", "Freunde" }, { "ui_my_code", "Dein Freundescode" }, { "ui_code_hint", "Gib ihn nur Leuten, die du kennst" },
+            { "ui_code_placeholder", "Freundescode" }, { "ui_add", "Hinzufügen" }, { "ui_visit", "Besuchen" }, { "ui_accept", "Annehmen" }, { "ui_decline", "Ablehnen" },
+            { "ui_cancel", "Abbrechen" }, { "ui_waiting_reply", "Wartet auf Antwort" }, { "ui_wants_friend", "Möchte befreundet sein" },
+            { "ui_no_friends", "Noch keine Freunde. Teile deinen Code!" }, { "ui_online_only", "Für Freunde brauchst du Internet" },
+            { "ui_loading", "Lädt..." }, { "ui_request_sent", "Anfrage gesendet" }, { "ui_friend_added", "Ihr seid jetzt Freunde!" },
+            { "ui_code_not_found", "Keine Farm hat diesen Code" }, { "ui_already_sent", "Schon gesendet" }, { "ui_friends_full", "Die Freundesliste ist voll" },
+            { "ui_farm_of", "Farm von {0}" }, { "ui_level_n", "Level {0}" }, { "ui_likes_n", "{0} Likes" }, { "ui_like", "Gefällt mir" }, { "ui_liked", "Gefällt dir" },
+            { "ui_gift", "{0} Münzen schenken" }, { "ui_gifted", "Geschenk gesendet" }, { "ui_home", "Nach Hause" }, { "ui_look_only", "Das ist die Farm deines Freundes. Du kannst dich umsehen." },
+            { "ui_got_gifts", "Freunde haben dir {0} Geschenke geschickt!" }, { "ui_got_likes", "Deine Farm hat {0} neue Likes" }, { "ui_gift_full", "Dein Freund hat heute genug Geschenke" },
+            { "ui_farmer", "Bauer" }, { "ui_try_again", "Das hat nicht geklappt. Versuch es nochmal." }, { "ui_remove", "Entfernen" },
             { "ui_order_wait", "Neuer Auftrag in {0}" }, { "ui_order_coming", "Neuer Auftrag kommt..." }, { "ui_order_missing", "Nicht genug Waren für diesen Auftrag" },
             { "ui_workshops", "Werkstätten" }, { "ui_go", "Öffnen" }, { "ui_ready_count", "{0} fertig" }, { "ui_working", "In Arbeit" },
 
@@ -142,6 +162,16 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> Ar = new()
         {
+            { "ui_friends", "الأصدقاء" }, { "ui_my_code", "كود الصداقة الخاص بك" }, { "ui_code_hint", "شاركه فقط مع أشخاص تعرفهم" },
+            { "ui_code_placeholder", "كود الصديق" }, { "ui_add", "إضافة" }, { "ui_visit", "زيارة" }, { "ui_accept", "قبول" }, { "ui_decline", "رفض" },
+            { "ui_cancel", "إلغاء" }, { "ui_waiting_reply", "بانتظار الرد" }, { "ui_wants_friend", "يريد أن يكون صديقك" },
+            { "ui_no_friends", "لا يوجد أصدقاء بعد. شارك الكود الخاص بك!" }, { "ui_online_only", "الأصدقاء يحتاجون اتصالًا بالإنترنت" },
+            { "ui_loading", "جارٍ التحميل..." }, { "ui_request_sent", "تم إرسال طلب الصداقة" }, { "ui_friend_added", "أصبحتما صديقين!" },
+            { "ui_code_not_found", "لا توجد مزرعة بهذا الكود" }, { "ui_already_sent", "تم الإرسال من قبل" }, { "ui_friends_full", "قائمة الأصدقاء ممتلئة" },
+            { "ui_farm_of", "مزرعة {0}" }, { "ui_level_n", "المستوى {0}" }, { "ui_likes_n", "{0} إعجاب" }, { "ui_like", "إعجاب" }, { "ui_liked", "تم الإعجاب" },
+            { "ui_gift", "هدية {0} عملة" }, { "ui_gifted", "تم إرسال الهدية" }, { "ui_home", "العودة للمزرعة" }, { "ui_look_only", "هذه مزرعة صديقك. يمكنك التفرج عليها." },
+            { "ui_got_gifts", "أرسل لك الأصدقاء {0} هدايا!" }, { "ui_got_likes", "أُعجب الأصدقاء بمزرعتك {0} مرات" }, { "ui_gift_full", "صديقك حصل على هدايا كافية اليوم" },
+            { "ui_farmer", "مزارع" }, { "ui_try_again", "لم ينجح ذلك. حاول مرة أخرى." }, { "ui_remove", "حذف" },
             { "ui_order_wait", "طلب جديد بعد {0}" }, { "ui_order_coming", "طلب جديد في الطريق..." }, { "ui_order_missing", "البضاعة لا تكفي لهذا الطلب" },
             { "ui_workshops", "الورشات" }, { "ui_go", "افتحي" }, { "ui_ready_count", "{0} جاهز" }, { "ui_working", "قيد العمل" },
 

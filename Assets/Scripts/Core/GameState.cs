@@ -87,8 +87,9 @@ namespace FarmWorld.Core
         {
             try
             {
-                Data.savedUtc = Now;
-                File.WriteAllText(_path, JsonUtility.ToJson(Data));
+                var own = _home ?? Data;   // a visited farm is never saved
+                own.savedUtc = Now;
+                File.WriteAllText(_path, JsonUtility.ToJson(own));
                 _dirty = false;
             }
             catch (Exception e) { Debug.LogWarning("[GameState] could not save: " + e.Message); }
@@ -581,7 +582,27 @@ namespace FarmWorld.Core
         /// <summary>Replaces the local farm with the server's authoritative state (see Backend).</summary>
         public void ApplyServerState(Dictionary<string, object> s)
         {
+            if (Visiting)
+            {
+                // the player's own farm changed on the server while they look at a friend's farm
+                var guest = Data;
+                Data = _home;
+                ApplyCore(s);
+                _home = Data;
+                Data = guest;
+                guest.coins = _home.coins; guest.xp = _home.xp; guest.level = _home.level; guest.inventory = _home.inventory;
+                Changed?.Invoke();
+                return;
+            }
             int oldLevel = Data.level;
+            ApplyCore(s);
+            if (Data.level > oldLevel) LeveledUp?.Invoke(Data.level);
+            Touch();
+            ServerApplied?.Invoke();
+        }
+
+        void ApplyCore(Dictionary<string, object> s)
+        {
             Data.coins = (int)MiniJson.N(s, "coins", Data.coins);
             Data.xp = (int)MiniJson.N(s, "xp", Data.xp);
             Data.level = Mathf.Max(1, (int)MiniJson.N(s, "level", Data.level));
@@ -598,52 +619,7 @@ namespace FarmWorld.Core
                 Data.inventory = list;
             }
 
-            var plots = MiniJson.A(s, "plots");
-            if (plots != null)
-            {
-                Data.plots.Clear();
-                foreach (var p in plots)
-                {
-                    string crop = MiniJson.S(p, "crop");
-                    Data.plots.Add(new PlotSave { crop = crop, plantedUtc = crop == "" ? 0 : (long)MiniJson.N(p, "planted_at") });
-                }
-            }
-
-            var animals = MiniJson.A(s, "animals");
-            if (animals != null)
-            {
-                var counts = new Dictionary<string, int>();
-                var list = new List<AnimalSave>();
-                foreach (var a in animals)
-                {
-                    string type = MiniJson.S(a, "type");
-                    counts.TryGetValue(type, out int n);
-                    counts[type] = n + 1;
-                    bool producing = MiniJson.S(a, "status") == "producing";
-                    list.Add(new AnimalSave
-                    {
-                        id = type + "_" + n, type = type,
-                        fedUtc = producing ? Math.Max(1, (long)MiniJson.N(a, "started_at")) : 0,
-                        hungrySinceUtc = producing ? 0 : (long)MiniJson.N(a, "hungry_since"),
-                        happiness = (int)MiniJson.N(a, "happiness", GameConfig.StartHappiness),
-                    });
-                }
-                Data.animals = list;
-            }
-
-            var workshops = MiniJson.O(s, "workshops");
-            if (workshops != null)
-            {
-                Data.workshops.Clear();
-                foreach (var kv in workshops)
-                {
-                    var w = new WorkshopSave { id = kv.Key };
-                    var jobs = MiniJson.A(kv.Value, "jobs");
-                    if (jobs != null)
-                        foreach (var j in jobs) w.jobs.Add(new JobSave { recipe = MiniJson.S(j, "recipe"), startUtc = (long)MiniJson.N(j, "started_at") });
-                    Data.workshops.Add(w);
-                }
-            }
+            ReadFarm(Data, s);
 
             var missions = MiniJson.O(s, "missions");
             if (missions != null)
@@ -680,9 +656,103 @@ namespace FarmWorld.Core
             }
 
             Data.serverLinked = true;
-            if (Data.level > oldLevel) LeveledUp?.Invoke(Data.level);
-            Touch();
+            if (MiniJson.S(s, "friend_code") != "") FriendCode = MiniJson.S(s, "friend_code");
+        }
+
+        /// <summary>Plots, animals and workshops from a server farm (own state or a friend's visit).</summary>
+        static void ReadFarm(SaveData d, Dictionary<string, object> s)
+        {
+            var plots = MiniJson.A(s, "plots");
+            if (plots != null)
+            {
+                d.plots.Clear();
+                foreach (var p in plots)
+                {
+                    string crop = MiniJson.S(p, "crop");
+                    d.plots.Add(new PlotSave { crop = crop, plantedUtc = crop == "" ? 0 : (long)MiniJson.N(p, "planted_at") });
+                }
+            }
+
+            var animals = MiniJson.A(s, "animals");
+            if (animals != null)
+            {
+                var counts = new Dictionary<string, int>();
+                var list = new List<AnimalSave>();
+                foreach (var a in animals)
+                {
+                    string type = MiniJson.S(a, "type");
+                    counts.TryGetValue(type, out int n);
+                    counts[type] = n + 1;
+                    bool producing = MiniJson.S(a, "status") == "producing";
+                    list.Add(new AnimalSave
+                    {
+                        id = type + "_" + n, type = type,
+                        fedUtc = producing ? Math.Max(1, (long)MiniJson.N(a, "started_at")) : 0,
+                        hungrySinceUtc = producing ? 0 : (long)MiniJson.N(a, "hungry_since"),
+                        happiness = (int)MiniJson.N(a, "happiness", GameConfig.StartHappiness),
+                    });
+                }
+                d.animals = list;
+            }
+
+            var workshops = MiniJson.O(s, "workshops");
+            if (workshops != null)
+            {
+                d.workshops.Clear();
+                foreach (var kv in workshops)
+                {
+                    var w = new WorkshopSave { id = kv.Key };
+                    var jobs = MiniJson.A(kv.Value, "jobs");
+                    if (jobs != null)
+                        foreach (var j in jobs) w.jobs.Add(new JobSave { recipe = MiniJson.S(j, "recipe"), startUtc = (long)MiniJson.N(j, "started_at") });
+                    d.workshops.Add(w);
+                }
+            }
+        }
+
+        // ------------------------------------------------------------- friend visits (read-only)
+
+        SaveData _home;
+        public string FriendCode { get; private set; } = "";
+        public bool Visiting => _home != null;
+        public string VisitCode { get; private set; } = "";
+        public string VisitName { get; private set; } = "";
+        public int VisitLevel { get; private set; }
+        public int VisitLikes { get; set; }
+        public bool VisitLiked { get; set; }
+        public bool VisitGifted { get; set; }
+
+        /// <summary>Shows a friend's farm (hf_visit result) in place of the player's own. Nothing on it can be changed or saved.</summary>
+        public void BeginVisit(Dictionary<string, object> v)
+        {
+            if (_dirty) Save();
+            var own = _home ?? Data;
+            var guest = new SaveData
+            {
+                coins = own.coins, xp = own.xp, level = own.level, inventory = own.inventory,   // the top bar keeps showing the visitor
+                storageLevel = (int)MiniJson.N(v, "storage_level"), serverLinked = true,
+            };
+            _home = own;
+            Data = guest;
+            ReadFarm(guest, v);
+            while (guest.plots.Count < GameConfig.StartingPlots) guest.plots.Add(new PlotSave());
+            VisitCode = MiniJson.S(v, "code");
+            VisitName = MiniJson.S(v, "display_name");
+            VisitLevel = (int)MiniJson.N(v, "level", 1);
+            VisitLikes = (int)MiniJson.N(v, "likes");
+            VisitLiked = MiniJson.B(v, "liked");
+            VisitGifted = MiniJson.B(v, "gifted");
             ServerApplied?.Invoke();
+            Changed?.Invoke();
+        }
+
+        public void EndVisit()
+        {
+            if (_home == null) return;
+            Data = _home;
+            _home = null;
+            ServerApplied?.Invoke();
+            Changed?.Invoke();
         }
 }
 }

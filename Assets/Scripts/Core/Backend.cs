@@ -74,6 +74,35 @@ namespace FarmWorld.Core
             if (State == Status.Online && !_flushing) StartCoroutine(Flush());
         }
 
+        public bool Online => State == Status.Online;
+
+        /// <summary>Fetches the player's latest state again (e.g. after friends sent coins).</summary>
+        public void Refresh() { if (Enabled && !_connecting && !_flushing) StartCoroutine(Connect()); }
+
+        /// <summary>Calls a read/social RPC directly (not queued). done gets the JSON object, or null when offline or refused.</summary>
+        public void Rpc(string fn, string json, Action<Dictionary<string, object>> done)
+        {
+            if (!Enabled) { done(null); return; }
+            StartCoroutine(RpcRoutine(fn, json, done));
+        }
+
+        IEnumerator RpcRoutine(string fn, string json, Action<Dictionary<string, object>> done)
+        {
+            for (int attempt = 0; attempt < 2; attempt++)
+            {
+                bool ok = false;
+                yield return EnsureSession(r => ok = r);
+                if (!ok) break;
+                long code = 0; string text = null;
+                yield return Post("/rest/v1/rpc/" + fn, json ?? "{}", true, (c, b) => { code = c; text = b; });
+                if (code == 401 && _session != null) { _session.expires_at = 0; continue; }
+                if (code == 200) { done(MiniJson.Parse(text) as Dictionary<string, object>); yield break; }
+                Debug.LogWarning($"[Backend] {fn} failed ({code}): {text}");
+                break;
+            }
+            done(null);
+        }
+
         public static string Str(string s)
         {
             var sb = new StringBuilder("\"");

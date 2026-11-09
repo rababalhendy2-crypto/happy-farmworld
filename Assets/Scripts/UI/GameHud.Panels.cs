@@ -128,6 +128,7 @@ namespace FarmWorld.UI
         {
             if (_panel != null) Destroy(_panel.gameObject);
             _panel = null; _panelBody = null; _panelFill = null;
+            _panelKind = "";
             _timers.Clear();
         }
 
