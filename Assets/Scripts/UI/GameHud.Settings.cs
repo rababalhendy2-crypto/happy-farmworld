@@ -108,6 +108,12 @@ namespace FarmWorld.UI
 
             // delete
             y = Mathf.Max(y + 10, _panelBody.sizeDelta.y - 76);
+            if (Sound.HasMusic)   // CC BY 4.0 needs the credit in the game
+            {
+                var credit = Label(_panelBody, "Music: \"Carefree\" by Kevin MacLeod (incompetech.com), CC BY 4.0", 14, Muted,
+                    TextAnchor.MiddleCenter, new Vector2(0, -(y - 26)), new Vector2(_panelBody.sizeDelta.x, 22), new Vector2(0.5f, 1));
+                credit.font = _font;
+            }
             var del = Button(_panelBody, new Vector2(0.5f, 1), new Vector2(0, -y), new Vector2(_confirmDelete ? 520 : 300, 56),
                 _confirmDelete ? Red : Grey, DeleteData);
             FitLabel(del, Texts.Get(_confirmDelete ? "ui_delete_confirm" : "ui_delete_data"), 20);

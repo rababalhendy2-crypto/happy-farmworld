@@ -28,7 +28,7 @@ namespace FarmWorld.Core
             _music = gameObject.AddComponent<AudioSource>();
             _music.clip = Resources.Load<AudioClip>("Audio/music_farm");
             _music.loop = true;
-            _music.volume = 0.28f;
+            _music.volume = 0.3f;
             _music.playOnAwake = false;
             for (int i = 0; i < 6; i++)
             {
