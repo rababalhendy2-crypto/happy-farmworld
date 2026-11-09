@@ -13,7 +13,7 @@ namespace FarmWorld.UI
     /// empty field is tapped, the storage window (with selling), toasts and floating "+3 Wheat" labels.
     /// All UI is built from code with uGUI.
     /// </summary>
-    public class GameHud : MonoBehaviour
+    public partial class GameHud : MonoBehaviour
     {
         static readonly Color Panel = new(1f, 0.97f, 0.9f, 0.97f);
         static readonly Color Ink = new(0.27f, 0.18f, 0.1f);
@@ -69,6 +69,7 @@ namespace FarmWorld.UI
             foreach (var f in _floaters) if (f.label != null) Destroy(f.label.gameObject);
             _floaters.Clear();
             _seedField = -1;
+            _panel = null; _panelFill = null; _timers.Clear();
             if (_canvas != null) Destroy(_canvas.gameObject);
             BuildUi();
         }
@@ -145,6 +146,7 @@ namespace FarmWorld.UI
             var icon = Img(btn, _round, new Color(0.65f, 0.42f, 0.22f), new Vector2(0, 0.5f), new Vector2(12, 0), new Vector2(46, 46));
             Img(icon, _round, new Color(0.85f, 0.62f, 0.35f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(36, 12));
             _storageLabel = Label(btn, "", 24, Ink, TextAnchor.MiddleLeft, new Vector2(68, 0), new Vector2(160, 70), new Vector2(0, 0.5f));
+            BuildPanelButtons();
         }
 
         void RefreshTop()
@@ -154,9 +156,11 @@ namespace FarmWorld.UI
             _level.text = gs.Data.level.ToString();
             int a = gs.XpForLevel(gs.Data.level), b = gs.XpForLevel(gs.Data.level + 1);
             _xpFill.fillAmount = Mathf.Clamp01((gs.Data.xp - a) / (float)Mathf.Max(1, b - a));
-            Set(_storageLabel, Fmt("ui_storage_count", gs.StorageUsed(), GameConfig.StorageCapacity));
+            Set(_storageLabel, Fmt("ui_storage_count", gs.StorageUsed(), GameState.I.Capacity));
             if (_storageWindow != null && _storageWindow.gameObject.activeSelf) FillStorage();
             if (_seedSheet != null && _seedSheet.gameObject.activeSelf) FillSeeds();
+            if (_panel != null) _panelDirty = true;
+            RefreshBadges();
         }
 
         // ------------------------------------------------------------------ field taps
@@ -169,6 +173,7 @@ namespace FarmWorld.UI
             if (drop != null && drop.Unit != null) { OnAnimal(drop.Unit, drop.Unit.GetComponent<Selectable>()); return; }
             var animal = s.GetComponent<AnimalUnit>();
             if (animal != null) { OnAnimal(animal, s); return; }
+            if (s.Kind == "building" && OpenBuilding(s.Id)) return;
             var plot = s.GetComponent<FieldPlot>();
             if (plot == null)
             {
@@ -344,6 +349,7 @@ namespace FarmWorld.UI
         void OpenStorage()
         {
             CloseSeeds();
+            ClosePanel();
             _storageWindow.gameObject.SetActive(true);
             _storageWindow.SetAsLastSibling();
             _toastGroup.transform.SetAsLastSibling();
@@ -360,6 +366,7 @@ namespace FarmWorld.UI
             {
                 Label(_storageList, Texts.Get("ui_empty_storage"), 24, new Color(0.45f, 0.4f, 0.35f), TextAnchor.MiddleCenter,
                     new Vector2(0, -60), new Vector2(560, 60), new Vector2(0.5f, 1));
+                StorageUpgradeButton();
                 return;
             }
             float y = 0;
@@ -394,8 +401,9 @@ namespace FarmWorld.UI
                 sellText.resizeTextMinSize = 12;
                 sellText.resizeTextMaxSize = 20;
                 y += 70;
-                if (y > 400) break;
+                if (y > 340) break;
             }
+            StorageUpgradeButton();
         }
 
         // ------------------------------------------------------------------ toast + floaters
@@ -426,6 +434,7 @@ namespace FarmWorld.UI
 
         void Update()
         {
+            TickPanel();
             if (_toastGroup != null && _toastGroup.alpha > 0 && Time.time > _toastUntil)
                 _toastGroup.alpha = Mathf.MoveTowards(_toastGroup.alpha, 0, Time.deltaTime * 3f);
             if (_selection != null && _selection.text.Length > 0 && Time.time > _selectionUntil) _selection.text = "";

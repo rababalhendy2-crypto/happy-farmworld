@@ -66,6 +66,19 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> En = new()
         {
+            { "flour", "Flour" }, { "bread", "Bread" }, { "pumpkin_pie", "Pumpkin pie" }, { "cheese", "Cheese" },
+            { "ui_market", "Market" }, { "ui_orders", "Market orders" }, { "ui_deliver", "Deliver" }, { "ui_new_order", "New order" },
+            { "ui_reward", "{0} coins + {1} XP" }, { "ui_delivered", "Order delivered! +{0} coins" },
+            { "ui_missions", "Missions" }, { "ui_daily", "Today" }, { "ui_weekly", "This week" }, { "ui_claim", "Claim" },
+            { "ui_claimed", "Done" }, { "ui_mission_reward", "+{0} coins" },
+            { "m_plant", "Plant {0} fields" }, { "m_harvest", "Harvest {0} crops" }, { "m_harvest_item", "Harvest {0} {1}" },
+            { "m_feed", "Feed animals {0} times" }, { "m_collect", "Collect {0} animal products" }, { "m_collect_item", "Collect {0} {1}" },
+            { "m_sell", "Sell {0} items" }, { "m_produce", "Make {0} products in workshops" },
+            { "ui_open_for", "Open for {0} coins" }, { "ui_workshop_locked", "Opens at level {0}" }, { "ui_opened", "{0} is open!" },
+            { "ui_start", "Make" }, { "ui_collect", "Collect" }, { "ui_slots", "Working {0}/{1}" }, { "ui_busy", "All places are busy – collect first" },
+            { "ui_missing", "Missing ingredients" }, { "ui_made", "+{0} {1}" },
+            { "ui_upgrade_storage", "Bigger storage: {0} places – {1} coins" }, { "ui_storage_upgraded", "Storage now holds {0}" },
+
             { "bld_house", "Farmhouse" }, { "bld_barn", "Barn" }, { "bld_coop", "Chicken coop" },
             { "bld_silo", "Grain silo" }, { "bld_warehouse", "Warehouse" }, { "bld_mill", "Mill" },
             { "bld_dairy", "Dairy" }, { "bld_tools", "Tool workshop" }, { "bld_inn", "Village inn" },
@@ -88,6 +101,19 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> De = new()
         {
+            { "flour", "Mehl" }, { "bread", "Brot" }, { "pumpkin_pie", "Kürbiskuchen" }, { "cheese", "Käse" },
+            { "ui_market", "Markt" }, { "ui_orders", "Marktaufträge" }, { "ui_deliver", "Liefern" }, { "ui_new_order", "Neuer Auftrag" },
+            { "ui_reward", "{0} Münzen + {1} XP" }, { "ui_delivered", "Auftrag geliefert! +{0} Münzen" },
+            { "ui_missions", "Aufgaben" }, { "ui_daily", "Heute" }, { "ui_weekly", "Diese Woche" }, { "ui_claim", "Abholen" },
+            { "ui_claimed", "Erledigt" }, { "ui_mission_reward", "+{0} Münzen" },
+            { "m_plant", "Bepflanze {0} Felder" }, { "m_harvest", "Ernte {0} Pflanzen" }, { "m_harvest_item", "Ernte {0} {1}" },
+            { "m_feed", "Füttere {0}-mal Tiere" }, { "m_collect", "Sammle {0} Tierprodukte" }, { "m_collect_item", "Sammle {0} {1}" },
+            { "m_sell", "Verkaufe {0} Waren" }, { "m_produce", "Stelle {0} Produkte her" },
+            { "ui_open_for", "Öffnen für {0} Münzen" }, { "ui_workshop_locked", "Ab Level {0}" }, { "ui_opened", "{0} ist geöffnet!" },
+            { "ui_start", "Herstellen" }, { "ui_collect", "Abholen" }, { "ui_slots", "In Arbeit {0}/{1}" }, { "ui_busy", "Alle Plätze belegt – erst abholen" },
+            { "ui_missing", "Zutaten fehlen" }, { "ui_made", "+{0} {1}" },
+            { "ui_upgrade_storage", "Größeres Lager: {0} Plätze – {1} Münzen" }, { "ui_storage_upgraded", "Das Lager fasst jetzt {0}" },
+
             { "bld_house", "Bauernhaus" }, { "bld_barn", "Scheune" }, { "bld_coop", "Hühnerstall" },
             { "bld_silo", "Getreidesilo" }, { "bld_warehouse", "Lager" }, { "bld_mill", "Mühle" },
             { "bld_dairy", "Molkerei" }, { "bld_tools", "Werkzeugschmiede" }, { "bld_inn", "Dorfgasthaus" },
@@ -110,6 +136,19 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> Ar = new()
         {
+            { "flour", "طحين" }, { "bread", "خبز" }, { "pumpkin_pie", "فطيرة يقطين" }, { "cheese", "جبنة" },
+            { "ui_market", "السوق" }, { "ui_orders", "طلبات السوق" }, { "ui_deliver", "سلّمي" }, { "ui_new_order", "طلب جديد" },
+            { "ui_reward", "{0} عملة + {1} خبرة" }, { "ui_delivered", "تم تسليم الطلب! +{0} عملة" },
+            { "ui_missions", "المهام" }, { "ui_daily", "اليوم" }, { "ui_weekly", "هذا الأسبوع" }, { "ui_claim", "استلمي" },
+            { "ui_claimed", "تمت" }, { "ui_mission_reward", "+{0} عملة" },
+            { "m_plant", "ازرعي {0} حقول" }, { "m_harvest", "احصدي {0} محاصيل" }, { "m_harvest_item", "احصدي {0} {1}" },
+            { "m_feed", "أطعمي الحيوانات {0} مرات" }, { "m_collect", "اجمعي {0} من منتجات الحيوانات" }, { "m_collect_item", "اجمعي {0} {1}" },
+            { "m_sell", "بيعي {0} أغراض" }, { "m_produce", "اصنعي {0} منتجات في الورشات" },
+            { "ui_open_for", "افتحيها بـ {0} عملة" }, { "ui_workshop_locked", "تُفتح في المستوى {0}" }, { "ui_opened", "{0} صارت مفتوحة!" },
+            { "ui_start", "اصنعي" }, { "ui_collect", "استلمي" }, { "ui_slots", "قيد العمل {0}/{1}" }, { "ui_busy", "كل الأماكن مشغولة – استلمي أولًا" },
+            { "ui_missing", "المكونات ناقصة" }, { "ui_made", "+{0} {1}" },
+            { "ui_upgrade_storage", "مخزن أكبر: {0} مكان – {1} عملة" }, { "ui_storage_upgraded", "المخزن صار يتسع لـ {0}" },
+
             { "bld_house", "بيت المزرعة" }, { "bld_barn", "الحظيرة" }, { "bld_coop", "قن الدجاج" },
             { "bld_silo", "صومعة الحبوب" }, { "bld_warehouse", "المستودع" }, { "bld_mill", "الطاحونة" },
             { "bld_dairy", "معمل الألبان" }, { "bld_tools", "ورشة الأدوات" }, { "bld_inn", "نزل القرية" },

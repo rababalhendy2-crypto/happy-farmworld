@@ -26,6 +26,36 @@ namespace FarmWorld.Core
         public int Xp;
     }
 
+    public class RecipeDef
+    {
+        public string Id;          // the product: flour, bread, cheese, ...
+        public List<(string item, int qty)> Inputs = new();
+        public int Seconds;
+        public int Qty;
+        public int Xp;
+    }
+
+    public class WorkshopDef
+    {
+        public string Id;          // config id: bakery, dairy
+        public string Building;    // world building that hosts it: mill, dairy
+        public string TitleKey;
+        public int Cost;
+        public int UnlockLevel;
+        public int Slots;
+        public List<RecipeDef> Recipes = new();
+    }
+
+    public class MissionDef
+    {
+        public string Id;
+        public string Event;       // plant | harvest | feed | collect | sell | produce
+        public string Item;        // "" = any item
+        public int Count;
+        public int Coins;
+        public int Xp;
+    }
+
     /// <summary>Balance values read from Resources/Data/game_config.json (one source of truth).</summary>
     public static class GameConfig
     {
@@ -47,6 +77,11 @@ namespace FarmWorld.Core
         public static int LevelRewardCoins = 50;
         public static float AutosaveSeconds = 20f;
         public static readonly Dictionary<string, int> StartInventory = new();
+        public static readonly List<(int capacity, int cost)> StorageLevels = new();
+        public static readonly List<WorkshopDef> Workshops = new();
+        public static readonly Dictionary<string, RecipeDef> RecipeById = new();
+        public static readonly List<MissionDef> DailyMissions = new(), WeeklyMissions = new();
+        public static int DailyCount = 3, WeeklyCount = 2;
         public static int[] LevelXp = { 0, 20, 55, 110, 190, 300, 450, 650, 900, 1200 };
 
         static bool _loaded;
@@ -72,7 +107,10 @@ namespace FarmWorld.Core
                 for (int i = 0; i < levels.Count; i++) LevelXp[i] = levels[i] is double d ? (int)d : 0;
             }
             var storage = MiniJson.A(eco, "storage_levels");
-            if (storage != null && storage.Count > 0) StorageCapacity = (int)MiniJson.N(storage[0], "capacity", StorageCapacity);
+            if (storage != null)
+                foreach (var lv in storage) StorageLevels.Add(((int)MiniJson.N(lv, "capacity", 60), (int)MiniJson.N(lv, "cost", 0)));
+            if (StorageLevels.Count == 0) StorageLevels.Add((StorageCapacity, 0));
+            StorageCapacity = StorageLevels[0].capacity;
             var inv = MiniJson.O(eco, "start_inventory");
             if (inv != null) foreach (var kv in inv) if (kv.Value is double n) StartInventory[kv.Key] = (int)n;
 
@@ -121,6 +159,94 @@ namespace FarmWorld.Core
             var items = MiniJson.O(root, "items");
             if (items != null)
                 foreach (var kv in items) SellPrice[kv.Key] = (int)MiniJson.N(kv.Value, "sell_price", 1);
+            LoadProduction(root);
+        }
+
+        /// <summary>
+        /// Workshops that have a building in the Unity world. A recipe is kept only when every input can
+        /// be made in this version (MVP crops, egg/milk/wool, or another kept recipe), so no recipe asks
+        /// for goat milk or strawberries the player can never get.
+        /// </summary>
+        static readonly (string id, string building, string titleKey)[] WorldWorkshops =
+        {
+            ("bakery", "mill", "bld_mill"), ("dairy", "dairy", "bld_dairy"),
+        };
+
+        static void LoadProduction(object root)
+        {
+            var available = new HashSet<string>(CropById.Keys);
+            foreach (var a in AnimalById.Values) available.Add(a.Product);
+            var recipes = MiniJson.O(root, "recipes");
+            var workshops = MiniJson.O(root, "workshops");
+            foreach (var (id, building, titleKey) in WorldWorkshops)
+            {
+                var w = MiniJson.O(workshops, id);
+                if (w == null) continue;
+                var def = new WorkshopDef
+                {
+                    Id = id, Building = building, TitleKey = titleKey,
+                    Cost = (int)MiniJson.N(w, "cost", 100),
+                    UnlockLevel = Mathf.Max(1, (int)MiniJson.N(w, "unlock_level", 1)),
+                    Slots = Mathf.Max(1, (int)MiniJson.N(w, "slots", 2)),
+                };
+                var list = MiniJson.A(w, "recipes");
+                if (list != null)
+                    foreach (var r in list)
+                    {
+                        if (r is not string rid) continue;
+                        var rd = MiniJson.O(recipes, rid);
+                        var inputs = MiniJson.O(rd, "inputs");
+                        if (rd == null || inputs == null) continue;
+                        var recipe = new RecipeDef
+                        {
+                            Id = rid,
+                            Seconds = Mathf.Max(5, (int)MiniJson.N(rd, "seconds", 60)),
+                            Qty = Mathf.Max(1, (int)MiniJson.N(rd, "qty", 1)),
+                            Xp = (int)MiniJson.N(rd, "xp", 1),
+                        };
+                        bool ok = true;
+                        foreach (var kv in inputs)
+                        {
+                            if (!available.Contains(kv.Key)) ok = false;
+                            recipe.Inputs.Add((kv.Key, kv.Value is double q ? (int)q : 1));
+                        }
+                        if (!ok) continue;
+                        available.Add(rid);
+                        def.Recipes.Add(recipe);
+                        RecipeById[rid] = recipe;
+                    }
+                if (def.Recipes.Count > 0) Workshops.Add(def);
+            }
+
+            var missions = MiniJson.O(root, "missions");
+            DailyCount = Mathf.Max(1, (int)MiniJson.N(missions, "daily_count", DailyCount));
+            WeeklyCount = Mathf.Max(1, (int)MiniJson.N(missions, "weekly_count", WeeklyCount));
+            ReadMissions(MiniJson.A(missions, "daily"), DailyMissions, available);
+            ReadMissions(MiniJson.A(missions, "weekly"), WeeklyMissions, available);
+        }
+
+        static void ReadMissions(List<object> src, List<MissionDef> dst, HashSet<string> available)
+        {
+            if (src == null) return;
+            foreach (var m in src)
+            {
+                var reward = MiniJson.O(m, "reward");
+                var def = new MissionDef
+                {
+                    Id = MiniJson.S(m, "id"), Event = MiniJson.S(m, "event"), Item = MiniJson.S(m, "item"),
+                    Count = Mathf.Max(1, (int)MiniJson.N(m, "count", 1)),
+                    Coins = (int)MiniJson.N(reward, "coins", 0), Xp = (int)MiniJson.N(reward, "xp", 0),
+                };
+                if (def.Id == "" || (def.Item != "" && !available.Contains(def.Item))) continue;
+                if (def.Event == "produce" && Workshops.Count == 0) continue;
+                dst.Add(def);
+            }
+        }
+
+        public static WorkshopDef WorkshopAt(string building)
+        {
+            foreach (var w in Workshops) if (w.Building == building) return w;
+            return null;
         }
 
         public static int SellPriceOf(string item) => SellPrice.TryGetValue(item, out var p) ? p : 1;
