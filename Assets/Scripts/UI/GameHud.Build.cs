@@ -164,9 +164,16 @@ namespace FarmWorld.UI
         {
             if (!_editing && _ghost == null) return false;
             var p = s != null ? s.GetComponentInParent<LayoutPiece>() : null;
-            if (_ghost != null) { if (p != _ghost) return false; }
-            else if (p == null || p.Ghost) return false;
             if (!Rig.GroundAt(screen, out var g)) return false;
+            if (_ghost != null)
+            {
+                // A thin fence or a small tree is hard to hit with a finger, so a drag that starts near the new piece grabs it too.
+                var gp = _ghost.transform.position;
+                float reach = Mathf.Max(1.6f, _ghost.Def != null ? _ghost.Def.Size * 0.75f : 1.6f);
+                if (p != _ghost && new Vector2(g.x - gp.x, g.z - gp.z).magnitude > reach) return false;
+                p = _ghost;
+            }
+            else if (p == null || p.Ghost) return false;
             if (_ghost == null) Select(p);
             _drag = p;
             _dragOffset = p.transform.position - g;
