@@ -8,7 +8,7 @@ namespace FarmWorld.Core
     /// </summary>
     public static class Bootstrap
     {
-        public const string Version = "0.4.0";
+        public const string Version = "0.5.0";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Init()
@@ -34,7 +34,8 @@ namespace FarmWorld.Core
             QualitySettings.vSyncCount = 0;
             Screen.sleepTimeout = SleepTimeout.SystemSetting;
 
-            gameObject.AddComponent<GameState>();
+            var gs = gameObject.AddComponent<GameState>();
+            gameObject.AddComponent<Backend>();
             var sun = World_CreateSun();
             World = new GameObject("World").AddComponent<World.WorldBuilder>();
             World.Build();
@@ -47,6 +48,13 @@ namespace FarmWorld.Core
             CameraRig.FocusImmediate(World.FarmCenter);
 
             new GameObject("Hud").AddComponent<UI.GameHud>();
+
+            // the server's state replaced the local one: redraw crops and animals
+            gs.ServerApplied += () =>
+            {
+                foreach (var f in World.Fields) if (f != null) f.GetComponent<Farming.FieldPlot>()?.Refresh(false);
+                foreach (var a in Object.FindObjectsByType<Farming.AnimalUnit>(FindObjectsSortMode.None)) a.Refresh(false);
+            };
         }
 
         static Light World_CreateSun()

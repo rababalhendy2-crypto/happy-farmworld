@@ -66,6 +66,9 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> En = new()
         {
+            { "ui_order_wait", "New order in {0}" }, { "ui_order_coming", "New order coming..." }, { "ui_order_missing", "Not enough goods for this order" },
+            { "ui_workshops", "Workshops" }, { "ui_go", "Open" }, { "ui_ready_count", "{0} ready" }, { "ui_working", "Working" },
+
             { "flour", "Flour" }, { "bread", "Bread" }, { "pumpkin_pie", "Pumpkin pie" }, { "cheese", "Cheese" },
             { "ui_market", "Market" }, { "ui_orders", "Market orders" }, { "ui_deliver", "Deliver" }, { "ui_new_order", "New order" },
             { "ui_reward", "{0} coins + {1} XP" }, { "ui_delivered", "Order delivered! +{0} coins" },
@@ -101,6 +104,9 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> De = new()
         {
+            { "ui_order_wait", "Neuer Auftrag in {0}" }, { "ui_order_coming", "Neuer Auftrag kommt..." }, { "ui_order_missing", "Nicht genug Waren für diesen Auftrag" },
+            { "ui_workshops", "Werkstätten" }, { "ui_go", "Öffnen" }, { "ui_ready_count", "{0} fertig" }, { "ui_working", "In Arbeit" },
+
             { "flour", "Mehl" }, { "bread", "Brot" }, { "pumpkin_pie", "Kürbiskuchen" }, { "cheese", "Käse" },
             { "ui_market", "Markt" }, { "ui_orders", "Marktaufträge" }, { "ui_deliver", "Liefern" }, { "ui_new_order", "Neuer Auftrag" },
             { "ui_reward", "{0} Münzen + {1} XP" }, { "ui_delivered", "Auftrag geliefert! +{0} Münzen" },
@@ -136,6 +142,9 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> Ar = new()
         {
+            { "ui_order_wait", "طلب جديد بعد {0}" }, { "ui_order_coming", "طلب جديد في الطريق..." }, { "ui_order_missing", "البضاعة لا تكفي لهذا الطلب" },
+            { "ui_workshops", "الورشات" }, { "ui_go", "افتحي" }, { "ui_ready_count", "{0} جاهز" }, { "ui_working", "قيد العمل" },
+
             { "flour", "طحين" }, { "bread", "خبز" }, { "pumpkin_pie", "فطيرة يقطين" }, { "cheese", "جبنة" },
             { "ui_market", "السوق" }, { "ui_orders", "طلبات السوق" }, { "ui_deliver", "سلّمي" }, { "ui_new_order", "طلب جديد" },
             { "ui_reward", "{0} عملة + {1} خبرة" }, { "ui_delivered", "تم تسليم الطلب! +{0} عملة" },

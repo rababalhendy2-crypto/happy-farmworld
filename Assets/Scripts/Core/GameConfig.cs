@@ -82,6 +82,8 @@ namespace FarmWorld.Core
         public static readonly Dictionary<string, RecipeDef> RecipeById = new();
         public static readonly List<MissionDef> DailyMissions = new(), WeeklyMissions = new();
         public static int DailyCount = 3, WeeklyCount = 2;
+        /// <summary>The animals in the Unity world, as the server lists them (config world.animals).</summary>
+        public static string[] WorldAnimals = { "cow", "cow", "sheep", "sheep", "chicken", "chicken", "chicken", "chicken" };
         public static int[] LevelXp = { 0, 20, 55, 110, 190, 300, 450, 650, 900, 1200 };
 
         static bool _loaded;

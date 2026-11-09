@@ -24,7 +24,7 @@ namespace FarmWorld.UI
         bool _panelDirty;
         float _nextTick;
         readonly List<(Text label, Func<string> value)> _timers = new();
-        Text _missionBadge, _marketBadge;
+        Text _missionBadge, _marketBadge, _workshopBadge;
 
         // ------------------------------------------------------------------ HUD buttons
 
@@ -41,6 +41,12 @@ namespace FarmWorld.UI
             Img(board, _round, new Color(0.98f, 0.95f, 0.85f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(30, 36));
             Label(missions, Texts.Get("ui_missions"), 24, Ink, TextAnchor.MiddleLeft, new Vector2(62, 0), new Vector2(136, 70), new Vector2(0, 0.5f));
             _missionBadge = Badge(missions);
+
+            var shops = Button(_root, new Vector2(1, 0), new Vector2(-692, 20), new Vector2(200, 70), Panel, OpenWorkshops);
+            var roof = Img(shops, _round, new Color(0.7f, 0.45f, 0.25f), new Vector2(0, 0.5f), new Vector2(12, 6), new Vector2(44, 20));
+            Img(roof, _round, new Color(0.95f, 0.9f, 0.8f), new Vector2(0.5f, 0), new Vector2(0, -20), new Vector2(34, 22));
+            Label(shops, Texts.Get("ui_workshops"), 22, Ink, TextAnchor.MiddleLeft, new Vector2(64, 0), new Vector2(134, 70), new Vector2(0, 0.5f));
+            _workshopBadge = Badge(shops);
             RefreshBadges();
         }
 
@@ -60,6 +66,7 @@ namespace FarmWorld.UI
             int deliverable = 0;
             foreach (var o in gs.Orders()) if (gs.CanDeliver(o)) deliverable++;
             SetBadge(_marketBadge, deliverable);
+            SetBadge(_workshopBadge, gs.ReadyJobs());
         }
 
         static void SetBadge(Text t, int n)
@@ -189,6 +196,33 @@ namespace FarmWorld.UI
 
         // ------------------------------------------------------------------ workshops
 
+        /// <summary>All workshops in one list, so the player does not have to scroll to the production area.</summary>
+        void OpenWorkshops() => OpenPanel(Texts.Get("ui_workshops"), new Vector2(760, 400), FillWorkshops);
+
+        void FillWorkshops()
+        {
+            var gs = GameState.I;
+            float y = 0;
+            foreach (var def in GameConfig.Workshops)
+            {
+                var ws = def;
+                var save = gs.Workshop(def.Id);
+                var row = Row(y, 80, RowColor);
+                RowText(row, Texts.Get(def.TitleKey), 26, Ink, 20, 260);
+                string status;
+                if (save == null) status = gs.Data.level < def.UnlockLevel ? Fmt("ui_workshop_locked", def.UnlockLevel) : Fmt("ui_open_for", def.Cost);
+                else
+                {
+                    int ready = 0;
+                    foreach (var j in save.jobs) if (gs.JobSecondsLeft(j) == 0) ready++;
+                    status = ready > 0 ? Fmt("ui_ready_count", ready) : Fmt("ui_slots", save.jobs.Count, def.Slots);
+                }
+                RowText(row, status, 20, Muted, 290, 260);
+                RowButton(row, Texts.Get("ui_go"), 150, Green, () => OpenWorkshop(ws));
+                y += 92;
+            }
+        }
+
         void OpenWorkshop(WorkshopDef def) =>
             OpenPanel(Texts.Get(def.TitleKey), new Vector2(820, 580), () => FillWorkshop(def));
 
@@ -294,6 +328,19 @@ namespace FarmWorld.UI
                 int index = i;
                 float x = (i - (orders.Count - 1) / 2f) * (w + gap) * (Texts.Rtl ? -1 : 1);
                 var card = Box(_panelBody, "Order", new Vector2(0.5f, 1), new Vector2(x, 0), new Vector2(w, 410), RowColor);
+                if (GameState.IsWaiting(o))
+                {
+                    // a replaced order rests for two minutes; a delivered one waits for the server's new order
+                    var wait = Label(card, "", 22, Muted, TextAnchor.MiddleCenter, new Vector2(0, 0), new Vector2(w - 20, 80), new Vector2(0.5f, 0.5f));
+                    if (o.items.Count == 0 || o.availableUtc == long.MaxValue) Set(wait, Texts.Get("ui_order_coming"));
+                    else
+                    {
+                        Set(wait, Fmt("ui_order_wait", Duration(o.availableUtc - GameState.Now)));
+                        var order = o;
+                        _timers.Add((wait, () => order.availableUtc > GameState.Now ? Texts.Display(Fmt("ui_order_wait", Duration(order.availableUtc - GameState.Now))) : null));
+                    }
+                    continue;
+                }
                 float y = -18;
                 foreach (var it in o.items)
                 {
@@ -309,7 +356,7 @@ namespace FarmWorld.UI
                 {
                     int coins = o.coins;
                     if (gs.Deliver(index)) Toast(Fmt("ui_delivered", coins), 2.4f);
-                    else Toast(Texts.Get("ui_missing"), 2f);
+                    else Toast(Texts.Get("ui_order_missing"), 2f);
                 });
                 FitLabel(deliver, Texts.Get("ui_deliver"), 26);
                 var skip = Button(card, new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(w - 80, 46), new Color(0.88f, 0.84f, 0.76f), () => gs.ReplaceOrder(index));

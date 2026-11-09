@@ -13,7 +13,7 @@ namespace FarmWorld.Core
     [Serializable] public class JobSave { public string recipe; public long startUtc; }
     [Serializable] public class WorkshopSave { public string id; public List<JobSave> jobs = new(); }
     /// <summary>A market order: deliver all items to earn the reward.</summary>
-    [Serializable] public class OrderSave { public List<ItemStack> items = new(); public int coins; public int xp; }
+    [Serializable] public class OrderSave { public List<ItemStack> items = new(); public int coins; public int xp; public long availableUtc; }
     /// <summary>Progress of the daily or weekly missions for one period (day or week number).</summary>
     [Serializable] public class MissionBucket { public string kind; public long period; public List<ItemStack> progress = new(); public List<string> claimed = new(); }
 
@@ -28,6 +28,8 @@ namespace FarmWorld.Core
         public List<PlotSave> plots = new();
         public List<AnimalSave> animals = new();
         public int storageLevel;
+        /// <summary>True once the server has sent this farm: from then on the server owns market orders.</summary>
+        public bool serverLinked;
         public List<WorkshopSave> workshops = new();
         public List<OrderSave> orders = new();
         public List<MissionBucket> missions = new();
@@ -45,6 +47,8 @@ namespace FarmWorld.Core
         public SaveData Data { get; private set; }
         public event Action Changed;
         public event Action<int> LeveledUp;
+        /// <summary>The server replaced the local state: fields and animals must redraw.</summary>
+        public event Action ServerApplied;
 
         string _path;
         float _nextSave;
@@ -92,15 +96,22 @@ namespace FarmWorld.Core
 
         void Update()
         {
-            if (Time.unscaledTime < _nextSave) return;
-            _nextSave = Time.unscaledTime + GameConfig.AutosaveSeconds;
-            if (_dirty) Save();
+            // save two seconds after the last change (a browser tab can be closed at any moment)
+            if (_dirty && Time.unscaledTime >= _nextSave) Save();
         }
 
         void OnApplicationPause(bool paused) { if (paused) Save(); }
         void OnApplicationQuit() => Save();
 
-        void Touch() { _dirty = true; Changed?.Invoke(); }
+        void Touch()
+        {
+            if (!_dirty) _nextSave = Time.unscaledTime + 2f;
+            _dirty = true;
+            Changed?.Invoke();
+        }
+
+        static void Send(string action, string args = "{}") { if (Backend.I != null) Backend.I.Enqueue(action, args); }
+        static string Q(string s) => Backend.Str(s);
 
         // ------------------------------------------------------------- coins & items
 
@@ -137,6 +148,7 @@ namespace FarmWorld.Core
             var next = NextStorage;
             if (next == null || !Spend(next.Value.cost)) return false;
             Data.storageLevel++;
+            Send("upgrade_storage");
             Touch();
             return true;
         }
@@ -171,8 +183,9 @@ namespace FarmWorld.Core
             if (count <= 0 || !RemoveItem(id, count)) return 0;
             int coins = GameConfig.SellPriceOf(id) * count;
             AddCoins(coins);
-            AddXp(Mathf.Max(1, coins / GameConfig.SellXpPerCoins));
+            AddXp(coins / GameConfig.SellXpPerCoins);   // same rule as the server: below 10 coins there is no XP
             Track("sell", id, count);
+            Send("sell", $"{{\"item\":{Q(id)},\"qty\":{count}}}");
             return coins;
         }
 
@@ -242,6 +255,7 @@ namespace FarmWorld.Core
             a.happiness = Mathf.Min(100, CurrentHappiness(a) + GameConfig.FeedBonus);
             a.fedUtc = Now; a.hungrySinceUtc = 0;
             Track("feed", a.type, 1);
+            Send("feed", $"{{\"idx\":{ServerAnimalIndex(a.id)}}}");
             Touch();
             return FeedResult.Ok;
         }
@@ -258,6 +272,7 @@ namespace FarmWorld.Core
             AddItem(product, qty);
             a.fedUtc = 0; a.hungrySinceUtc = Now;
             Track("collect", product, qty);
+            Send("collect", $"{{\"idx\":{ServerAnimalIndex(a.id)}}}");
             AddXp(def.Xp);
             Touch();
             return CollectResult.Ok;
@@ -275,6 +290,7 @@ namespace FarmWorld.Core
             if (!Spend(crop.SeedPrice)) return false;
             p.crop = crop.Id; p.plantedUtc = Now;
             Track("plant", crop.Id, 1);
+            Send("plant", $"{{\"idx\":{index},\"crop\":{Q(crop.Id)}}}");
             Touch();
             return true;
         }
@@ -306,6 +322,7 @@ namespace FarmWorld.Core
             AddItem(crop.Id, crop.Yield);
             p.crop = ""; p.plantedUtc = 0;
             Track("harvest", crop.Id, crop.Yield);
+            Send("harvest", $"{{\"idx\":{index}}}");
             AddXp(crop.Xp);
             Touch();
             return HarvestResult.Ok;
@@ -327,6 +344,7 @@ namespace FarmWorld.Core
             if (Data.level < def.UnlockLevel) return BuyResult.Locked;
             if (!Spend(def.Cost)) return BuyResult.NoCoins;
             Data.workshops.Add(new WorkshopSave { id = def.Id });
+            Send("buy_workshop", $"{{\"id\":{Q(def.Id)}}}");
             Touch();
             return BuyResult.Ok;
         }
@@ -347,6 +365,7 @@ namespace FarmWorld.Core
             if (!HasInputs(r)) return JobResult.Missing;   // checked first, so a failed start never removes anything
             foreach (var (item, qty) in r.Inputs) RemoveItem(item, qty);
             w.jobs.Add(new JobSave { recipe = r.Id, startUtc = Now });
+            Send("start_job", $"{{\"ws\":{Q(def.Id)},\"recipe\":{Q(r.Id)}}}");
             Touch();
             return JobResult.Ok;
         }
@@ -363,6 +382,7 @@ namespace FarmWorld.Core
             if (!GameConfig.RecipeById.TryGetValue(j.recipe, out recipe) || JobSecondsLeft(j) > 0) return CollectResult.NotReady;
             if (StorageFree < recipe.Qty) return CollectResult.StorageFull;
             w.jobs.RemoveAt(index);
+            Send("collect_job", $"{{\"ws\":{Q(def.Id)},\"job\":{index}}}");
             AddItem(recipe.Id, recipe.Qty);
             Track("produce", recipe.Id, recipe.Qty);
             AddXp(recipe.Xp);
@@ -415,16 +435,29 @@ namespace FarmWorld.Core
             return o;
         }
 
+        public const int ReplaceSeconds = 120;
+
+        /// <summary>
+        /// The order slots. Offline-only farms make their own orders; once the server has sent the farm it
+        /// owns them, and a slot that was just delivered waits empty until the server's answer arrives.
+        /// </summary>
         public List<OrderSave> Orders()
         {
             bool added = false;
-            while (Data.orders.Count < OrderCount) { Data.orders.Add(NewOrder()); added = true; }
+            while (Data.orders.Count < OrderCount)
+            {
+                Data.orders.Add(Data.serverLinked ? new OrderSave { availableUtc = long.MaxValue } : NewOrder());
+                added = true;
+            }
             if (added) _dirty = true;
             return Data.orders;
         }
 
+        public static bool IsWaiting(OrderSave o) => o.items.Count == 0 || o.availableUtc > Now;
+
         public bool CanDeliver(OrderSave o)
         {
+            if (IsWaiting(o)) return false;
             foreach (var s in o.items) if (Count(s.id) < s.count) return false;
             return true;
         }
@@ -435,7 +468,8 @@ namespace FarmWorld.Core
             if (index < 0 || index >= list.Count || !CanDeliver(list[index])) return false;
             var o = list[index];
             foreach (var s in o.items) RemoveItem(s.id, s.count);
-            list[index] = NewOrder();
+            list[index] = Data.serverLinked ? new OrderSave { availableUtc = long.MaxValue } : NewOrder();
+            Send("deliver_order", $"{{\"idx\":{index}}}");
             AddCoins(o.coins);
             foreach (var s in o.items) Track("sell", s.id, s.count);
             AddXp(o.xp);
@@ -443,12 +477,17 @@ namespace FarmWorld.Core
             return true;
         }
 
-        public void ReplaceOrder(int index)
+        /// <summary>Swaps an order for another one; the slot then waits two minutes, so orders cannot be rerolled endlessly.</summary>
+        public bool ReplaceOrder(int index)
         {
             var list = Orders();
-            if (index < 0 || index >= list.Count) return;
-            list[index] = NewOrder();
+            if (index < 0 || index >= list.Count || IsWaiting(list[index])) return false;
+            var n = Data.serverLinked ? new OrderSave() : NewOrder();
+            n.availableUtc = Now + ReplaceSeconds;
+            list[index] = n;
+            Send("replace_order", $"{{\"idx\":{index}}}");
             Touch();
+            return true;
         }
 
         // ------------------------------------------------------------- missions (daily / weekly)
@@ -507,6 +546,7 @@ namespace FarmWorld.Core
         {
             if (MissionClaimed(kind, m) || MissionProgress(kind, m) < m.Count) return false;
             Bucket(kind).claimed.Add(m.Id);
+            Send("claim_mission", $"{{\"kind\":{Q(kind)},\"id\":{Q(m.Id)}}}");
             AddCoins(m.Coins);
             AddXp(m.Xp);
             Touch();
@@ -521,6 +561,128 @@ namespace FarmWorld.Core
                 foreach (var m in ActiveMissions(kind))
                     if (!MissionClaimed(kind, m) && MissionProgress(kind, m) >= m.Count) n++;
             return n;
+        }
+
+        // ------------------------------------------------------------- server state
+
+        /// <summary>Index of a Unity animal (cow_1) in the server's animal list (config world.animals).</summary>
+        public static int ServerAnimalIndex(string id)
+        {
+            int cut = id.LastIndexOf('_');
+            string type = id.Substring(0, cut);
+            int n = int.Parse(id.Substring(cut + 1));
+            for (int i = 0; i < GameConfig.WorldAnimals.Length; i++)
+                if (GameConfig.WorldAnimals[i] == type && n-- == 0) return i;
+            return -1;
+        }
+
+        static int Int(object o) => o is double d ? (int)d : 0;
+
+        /// <summary>Replaces the local farm with the server's authoritative state (see Backend).</summary>
+        public void ApplyServerState(Dictionary<string, object> s)
+        {
+            int oldLevel = Data.level;
+            Data.coins = (int)MiniJson.N(s, "coins", Data.coins);
+            Data.xp = (int)MiniJson.N(s, "xp", Data.xp);
+            Data.level = Mathf.Max(1, (int)MiniJson.N(s, "level", Data.level));
+            Data.storageLevel = (int)MiniJson.N(s, "storage_level", Data.storageLevel);
+
+            var inv = MiniJson.O(s, "inventory");
+            if (inv != null)
+            {
+                var list = new List<ItemStack>();
+                foreach (var old in Data.inventory)   // keep the order the player knows
+                    if (inv.TryGetValue(old.id, out var q) && Int(q) > 0) list.Add(new ItemStack { id = old.id, count = Int(q) });
+                foreach (var kv in inv)
+                    if (Int(kv.Value) > 0 && list.Find(x => x.id == kv.Key) == null) list.Add(new ItemStack { id = kv.Key, count = Int(kv.Value) });
+                Data.inventory = list;
+            }
+
+            var plots = MiniJson.A(s, "plots");
+            if (plots != null)
+            {
+                Data.plots.Clear();
+                foreach (var p in plots)
+                {
+                    string crop = MiniJson.S(p, "crop");
+                    Data.plots.Add(new PlotSave { crop = crop, plantedUtc = crop == "" ? 0 : (long)MiniJson.N(p, "planted_at") });
+                }
+            }
+
+            var animals = MiniJson.A(s, "animals");
+            if (animals != null)
+            {
+                var counts = new Dictionary<string, int>();
+                var list = new List<AnimalSave>();
+                foreach (var a in animals)
+                {
+                    string type = MiniJson.S(a, "type");
+                    counts.TryGetValue(type, out int n);
+                    counts[type] = n + 1;
+                    bool producing = MiniJson.S(a, "status") == "producing";
+                    list.Add(new AnimalSave
+                    {
+                        id = type + "_" + n, type = type,
+                        fedUtc = producing ? Math.Max(1, (long)MiniJson.N(a, "started_at")) : 0,
+                        hungrySinceUtc = producing ? 0 : (long)MiniJson.N(a, "hungry_since"),
+                        happiness = (int)MiniJson.N(a, "happiness", GameConfig.StartHappiness),
+                    });
+                }
+                Data.animals = list;
+            }
+
+            var workshops = MiniJson.O(s, "workshops");
+            if (workshops != null)
+            {
+                Data.workshops.Clear();
+                foreach (var kv in workshops)
+                {
+                    var w = new WorkshopSave { id = kv.Key };
+                    var jobs = MiniJson.A(kv.Value, "jobs");
+                    if (jobs != null)
+                        foreach (var j in jobs) w.jobs.Add(new JobSave { recipe = MiniJson.S(j, "recipe"), startUtc = (long)MiniJson.N(j, "started_at") });
+                    Data.workshops.Add(w);
+                }
+            }
+
+            var missions = MiniJson.O(s, "missions");
+            if (missions != null)
+            {
+                Data.missions.Clear();
+                foreach (var kind in new[] { "daily", "weekly" })
+                {
+                    var b = MiniJson.O(missions, kind);
+                    if (b == null) continue;
+                    var bucket = new MissionBucket { kind = kind, period = (long)MiniJson.N(b, "period") };
+                    var prog = MiniJson.O(b, "progress");
+                    if (prog != null) foreach (var kv in prog) bucket.progress.Add(new ItemStack { id = kv.Key, count = Int(kv.Value) });
+                    var claimed = MiniJson.A(b, "claimed");
+                    if (claimed != null) foreach (var c in claimed) if (c is string id) bucket.claimed.Add(id);
+                    Data.missions.Add(bucket);
+                }
+            }
+
+            var orders = MiniJson.A(s, "orders");
+            if (orders != null)
+            {
+                Data.orders.Clear();
+                foreach (var o in orders)
+                {
+                    var order = new OrderSave
+                    {
+                        coins = (int)MiniJson.N(o, "coins"), xp = (int)MiniJson.N(o, "xp"),
+                        availableUtc = (long)Math.Ceiling(MiniJson.N(o, "available_at")),
+                    };
+                    var items = MiniJson.O(o, "items");
+                    if (items != null) foreach (var kv in items) order.items.Add(new ItemStack { id = kv.Key, count = Int(kv.Value) });
+                    Data.orders.Add(order);
+                }
+            }
+
+            Data.serverLinked = true;
+            if (Data.level > oldLevel) LeveledUp?.Invoke(Data.level);
+            Touch();
+            ServerApplied?.Invoke();
         }
 }
 }
