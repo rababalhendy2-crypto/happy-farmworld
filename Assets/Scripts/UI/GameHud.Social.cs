@@ -281,11 +281,21 @@ namespace FarmWorld.UI
             var gs = GameState.I;
             bool rtl = Texts.Rtl;
             var bar = Box(_root, "VisitBar", new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(1180, 92), Panel);
-            var title = Label(bar, Fmt("ui_farm_of", PlayerName(gs.VisitName)), 28, Ink, rtl ? TextAnchor.UpperRight : TextAnchor.UpperLeft,
-                new Vector2(rtl ? -20 : 20, -10), new Vector2(400, 40), new Vector2(rtl ? 1 : 0, 1));
-            title.horizontalOverflow = HorizontalWrapMode.Wrap; title.resizeTextForBestFit = true; title.resizeTextMinSize = 14; title.resizeTextMaxSize = 28;
-            Label(bar, Fmt("ui_level_n", gs.VisitLevel) + "   " + Fmt("ui_likes_n", gs.VisitLikes), 20, Muted,
-                rtl ? TextAnchor.LowerRight : TextAnchor.LowerLeft, new Vector2(rtl ? -20 : 20, 10), new Vector2(400, 34), new Vector2(rtl ? 1 : 0, 0));
+            string name = gs.VisitName;
+            string titleText = string.IsNullOrEmpty(name) || name == "Farmer" ? Texts.Get("ui_friend_farm") : Fmt("ui_farm_of", name);
+            var title = Label(bar, titleText, 26, Ink, rtl ? TextAnchor.UpperRight : TextAnchor.UpperLeft,
+                new Vector2(rtl ? -20 : 20, -6), new Vector2(400, 40), new Vector2(rtl ? 1 : 0, 1));
+            title.horizontalOverflow = HorizontalWrapMode.Wrap; title.resizeTextForBestFit = true; title.resizeTextMinSize = 14; title.resizeTextMaxSize = 26;
+            // second line: level, likes and the friend code, each in its own label so Arabic and Latin never mix
+            float lx = 20;
+            foreach (var (text, latin, width) in new[] {
+                (Fmt("ui_level_n", gs.VisitLevel), false, 130f), (Fmt("ui_likes_n", gs.VisitLikes), false, 130f), (gs.VisitCode, true, 120f) })
+            {
+                var l = Label(bar, text, 18, Muted, rtl ? TextAnchor.LowerRight : TextAnchor.LowerLeft,
+                    new Vector2(rtl ? -lx : lx, 8), new Vector2(width, 30), new Vector2(rtl ? 1 : 0, 0));
+                if (latin) l.font = _font;
+                lx += width;
+            }
 
             // buttons from the far edge: Home, Gift, Like
             float x = 14;
