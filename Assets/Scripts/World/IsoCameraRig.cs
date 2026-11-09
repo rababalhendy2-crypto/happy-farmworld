@@ -14,6 +14,50 @@ namespace FarmWorld.World
         public float Pitch = 35f;
         public System.Action<Selectable> OnSelect;
 
+        /// <summary>
+        /// Tool strokes (seed bag, sickle, moving an object): when a press starts on something and StrokeStart
+        /// returns true, a one-finger drag no longer pans the camera. StrokeMove gets what is under the finger
+        /// every frame and StrokeEnd is called on release. Pinch and two-finger gestures still work.
+        /// </summary>
+        public System.Func<Selectable, Vector2, bool> StrokeStart;
+        public System.Action<Selectable, Vector2> StrokeMove;
+        public System.Action StrokeEnd;
+        bool _stroking;
+        public bool Stroking => _stroking;
+
+        public Selectable PickAt(Vector2 screenPos)
+        {
+            var ray = Cam.ScreenPointToRay(screenPos);
+            return Physics.Raycast(ray, out var info, 400f) ? info.collider.GetComponentInParent<Selectable>() : null;
+        }
+
+        /// <summary>Where a screen point meets the ground plane (y = 0).</summary>
+        public bool GroundAt(Vector2 screenPos, out Vector3 p)
+        {
+            var ray = Cam.ScreenPointToRay(screenPos);
+            p = default;
+            if (Mathf.Abs(ray.direction.y) < 1e-4f) return false;
+            float t = -ray.origin.y / ray.direction.y;
+            if (t < 0f) return false;
+            p = ray.origin + ray.direction * t;
+            return true;
+        }
+
+        bool TryStroke(Vector2 pos)
+        {
+            if (StrokeStart == null || OverUi(pos)) return false;
+            if (!StrokeStart(PickAt(pos), pos)) return false;
+            _stroking = true;
+            return true;
+        }
+
+        void EndStroke()
+        {
+            if (!_stroking) return;
+            _stroking = false;
+            StrokeEnd?.Invoke();
+        }
+
         public Camera Cam { get; private set; }
         Vector3 _focus, _focusTarget;
         float _yaw = 45f, _yawTarget = 45f;
@@ -94,6 +138,7 @@ namespace FarmWorld.World
         {
             if (Input.touchCount >= 2)
             {
+                EndStroke();
                 var a = Input.GetTouch(0); var b = Input.GetTouch(1);
                 float d = Vector2.Distance(a.position, b.position);
                 float ang = Mathf.Atan2(b.position.y - a.position.y, b.position.x - a.position.x) * Mathf.Rad2Deg;
@@ -116,13 +161,18 @@ namespace FarmWorld.World
                     _dragging = OverUi(touch.position);   // touches that start on UI never move the camera
                     _downPos = touch.position; _downTime = Time.unscaledTime;
                     if (_dragging) _downTime = -10f;
+                    else if (TryStroke(touch.position)) { _downTime = -10f; _dragging = true; }
                     break;
                 case TouchPhase.Moved:
+                case TouchPhase.Stationary:
+                    if (_stroking) { StrokeMove?.Invoke(PickAt(touch.position), touch.position); break; }
+                    if (touch.phase == TouchPhase.Stationary) break;
                     if (_multi || _downTime < 0f) break;
                     if (!_dragging && (touch.position - _downPos).magnitude > Screen.dpi * 0.08f + 6f) _dragging = true;
                     if (_dragging) Pan(touch.deltaPosition);
                     break;
                 case TouchPhase.Ended:
+                    if (_stroking) { EndStroke(); _dragging = false; _beganFinger = -1; break; }
                     // A very quick tap can end before its Began phase was ever seen in a frame.
                     if (_beganFinger != touch.fingerId && !_multi && !OverUi(touch.position)) { Tap(touch.position); _dragging = false; break; }
                     _beganFinger = -1;
@@ -131,6 +181,7 @@ namespace FarmWorld.World
                     if (Input.touchCount <= 1) _multi = false;
                     break;
                 case TouchPhase.Canceled:
+                    EndStroke();
                     _dragging = false; _multi = false;
                     break;
             }
@@ -147,6 +198,11 @@ namespace FarmWorld.World
             {
                 _downPos = Input.mousePosition; _downTime = OverUi(Input.mousePosition) ? -10f : Time.unscaledTime;
                 _dragging = false; _lastMouse = Input.mousePosition;
+                if (_downTime > 0f && TryStroke(Input.mousePosition)) _downTime = -10f;
+            }
+            else if (_stroking && Input.GetMouseButton(0))
+            {
+                StrokeMove?.Invoke(PickAt(Input.mousePosition), Input.mousePosition);
             }
             else if (Input.GetMouseButton(0) && _downTime > 0f)
             {
@@ -158,6 +214,7 @@ namespace FarmWorld.World
             // Not "else": on a slow frame the press and release can arrive together; that is still a tap.
             if (Input.GetMouseButtonUp(0))
             {
+                if (_stroking) { EndStroke(); _dragging = false; return; }
                 if (!_dragging && _downTime > 0f) Tap(Input.mousePosition);
                 _dragging = false;
             }
@@ -183,9 +240,7 @@ namespace FarmWorld.World
         void Tap(Vector2 screenPos)
         {
             if (OverUi(screenPos)) return;   // the release landed on UI: the UI handles it
-            var ray = Cam.ScreenPointToRay(screenPos);
-            Selectable hit = null;
-            if (Physics.Raycast(ray, out var info, 400f)) hit = info.collider.GetComponentInParent<Selectable>();
+            Selectable hit = PickAt(screenPos);
             if (_selected != null && _selected != hit) _selected.SetHighlighted(false);
             _selected = hit;
             if (hit != null) hit.SetHighlighted(true);

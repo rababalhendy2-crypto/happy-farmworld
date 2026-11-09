@@ -8,7 +8,7 @@ namespace FarmWorld.Core
     /// </summary>
     public static class Bootstrap
     {
-        public const string Version = "0.7.7";
+        public const string Version = "0.7.8";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Init()

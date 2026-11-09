@@ -111,6 +111,11 @@ namespace FarmWorld.Core
                 var own = _home ?? Data;   // a visited farm is never saved
                 own.savedUtc = Now;
                 File.WriteAllText(_path, JsonUtility.ToJson(own));
+#if UNITY_WEBGL && !UNITY_EDITOR
+                // In the browser, files live in memory until the file system is synced to IndexedDB.
+                // PlayerPrefs.Save() triggers that sync; without it a reload loses everything since the last sync.
+                PlayerPrefs.Save();
+#endif
                 _dirty = false;
             }
             catch (Exception e) { Debug.LogWarning("[GameState] could not save: " + e.Message); }

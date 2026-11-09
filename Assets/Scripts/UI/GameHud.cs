@@ -51,6 +51,7 @@ namespace FarmWorld.UI
             gs.LeveledUp += OnLevelUp;
             var rig = GameRoot.Instance != null ? GameRoot.Instance.CameraRig : null;
             if (rig != null) rig.OnSelect += OnSelect;
+            HookTools();
             DayNightCycle.OnTimeChanged += OnTime;
             Texts.Changed += OnLanguageChanged;
             Backend.StatusChanged += OnBackendStatus;
@@ -71,6 +72,7 @@ namespace FarmWorld.UI
             foreach (var f in _floaters) if (f.label != null) Destroy(f.label.gameObject);
             _floaters.Clear();
             _seedField = -1;
+            EndTool();
             _panel = null; _panelFill = null; _timers.Clear();
             if (_canvas != null) Destroy(_canvas.gameObject);
             BuildUi();
@@ -103,6 +105,7 @@ namespace FarmWorld.UI
             if (GameState.I != null) { GameState.I.Changed -= RefreshTop; GameState.I.LeveledUp -= OnLevelUp; GameState.I.Tracked -= OnTracked; }
             var rig = GameRoot.Instance != null ? GameRoot.Instance.CameraRig : null;
             if (rig != null) rig.OnSelect -= OnSelect;
+            UnhookTools();
             DayNightCycle.OnTimeChanged -= OnTime;
             Texts.Changed -= OnLanguageChanged;
             Backend.StatusChanged -= OnBackendStatus;
@@ -173,6 +176,7 @@ namespace FarmWorld.UI
         void OnSelect(Selectable s)
         {
             CloseSeeds();
+            EndTool();   // a tap that no tool took (grass, a growing field, a building) puts the tool away
             if (s == null) { _selection.text = ""; return; }
             if (GameState.I.Visiting) { VisitTap(s); return; }
             var drop = s.GetComponent<ProductDrop>();
@@ -205,6 +209,7 @@ namespace FarmWorld.UI
                     Floater(Fmt("ui_harvested", crop.Yield, Texts.Get(crop.Id)), plot.transform.position + Vector3.up * 1.5f);
                     Sound.Play("harvest");
                     plot.Refresh(true);
+                    StartTool(Tool.Sickle);   // the sickle stays in hand: swipe over the other ripe fields
                     break;
                 case GameState.HarvestResult.StorageFull:
                     ErrorToast(Texts.Get("ui_storage_full"), 2.5f);
@@ -331,6 +336,7 @@ namespace FarmWorld.UI
                 plot.Refresh(true); plot.Pop();
                 Floater("-" + crop.SeedPrice + " " + Texts.Get("ui_coins"), plot.transform.position + Vector3.up * 1.2f);
             }
+            StartTool(Tool.Seed, crop);   // the seed bag stays in hand: swipe over the other empty fields
         }
 
         // ------------------------------------------------------------------ storage window

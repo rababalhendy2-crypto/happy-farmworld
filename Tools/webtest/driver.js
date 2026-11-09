@@ -9,10 +9,11 @@ const fs = require('fs');
   page.on('console', m => { const t = m.text(); if (/error|Exception|ModelLibrary|Game|warn/i.test(t)) log.push(t.slice(0,300)); });
   page.on('pageerror', e => log.push('pageerror: ' + e.message.slice(0,300)));
   if (process.env.MOCK) {
-    const mock = require(__dirname + '/mock.js');
+    const mock = require('/tmp/mock.js');
     const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST, GET, OPTIONS' };
     await page.route(/supabase\.co/, async route => {
       const req = route.request();
+      if (fs.existsSync('/tmp/offline')) return route.abort('internetdisconnected');
       if (req.method() == 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
       let body = {}; try { body = JSON.parse(req.postData() || '{}'); } catch (e) {}
       const res = mock.handle(new URL(req.url()).pathname, body);
