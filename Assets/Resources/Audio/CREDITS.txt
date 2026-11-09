@@ -1,0 +1,5 @@
+Audio credits
+- tap, open, close, error, confirm, plant, harvest, collect: Kenney Interface Sounds (CC0), kenney.nl
+- coins: Kenney RPG Audio (CC0)
+- levelup: Kenney Music Jingles (CC0)
+- music_farm, cow, sheep, chicken: made for Farm World from code (Tools/audio/synth.py)

@@ -57,7 +57,7 @@ namespace FarmWorld.UI
             if (Backend.I != null && Backend.I.Online) OnBackendStatus(Backend.Status.Online);
         }
 
-        void OnLevelUp(int lvl) => Toast(Fmt("ui_level_up", lvl, GameConfig.LevelRewardCoins), 3f);
+        void OnLevelUp(int lvl) { Toast(Fmt("ui_level_up", lvl, GameConfig.LevelRewardCoins), 3f); Sound.Play("levelup", 0.7f); }
 
         void OnTime(float t)
         {
@@ -201,10 +201,11 @@ namespace FarmWorld.UI
             {
                 case GameState.HarvestResult.Ok:
                     Floater(Fmt("ui_harvested", crop.Yield, Texts.Get(crop.Id)), plot.transform.position + Vector3.up * 1.5f);
+                    Sound.Play("harvest");
                     plot.Refresh(true);
                     break;
                 case GameState.HarvestResult.StorageFull:
-                    Toast(Texts.Get("ui_storage_full"), 2.5f);
+                    ErrorToast(Texts.Get("ui_storage_full"), 2.5f);
                     break;
             }
         }
@@ -217,6 +218,7 @@ namespace FarmWorld.UI
             var save = unit.Save;
             if (save == null || !GameConfig.AnimalById.TryGetValue(unit.Type, out var def)) return;
             string name = Texts.Get(s.TitleKey);
+            Sound.Animal(unit.Type);
             switch (gs.StateOf(save))
             {
                 case GameState.AnimalState.Hungry:
@@ -239,9 +241,10 @@ namespace FarmWorld.UI
                     {
                         case GameState.CollectResult.Ok:
                             Floater(Fmt("ui_harvested", qty, Texts.Get(product)), unit.transform.position + Vector3.up * 1.6f);
+                            Sound.Play("collect");
                             break;
                         case GameState.CollectResult.StorageFull:
-                            Toast(Texts.Get("ui_storage_full"), 2.5f);
+                            ErrorToast(Texts.Get("ui_storage_full"), 2.5f);
                             break;
                     }
                     break;
@@ -314,9 +317,10 @@ namespace FarmWorld.UI
             var gs = GameState.I;
             if (_seedField < 0) return;
             if (gs.Data.level < crop.UnlockLevel) { Toast(Fmt("ui_needs_level", crop.UnlockLevel), 2f); return; }
-            if (gs.Data.coins < crop.SeedPrice) { Toast(Texts.Get("ui_not_enough_coins"), 2f); return; }
+            if (gs.Data.coins < crop.SeedPrice) { ErrorToast(Texts.Get("ui_not_enough_coins"), 2f); return; }
             int field = _seedField;
             if (!gs.Plant(field, crop)) return;
+            Sound.Play("plant");
             CloseSeeds();
             var world = GameRoot.Instance != null ? GameRoot.Instance.World : null;
             if (world != null && field < world.Fields.Count)
@@ -395,7 +399,7 @@ namespace FarmWorld.UI
                 var sell = Button(row, new Vector2(rtl ? 0 : 1, 0.5f), new Vector2(rtl ? 10 : -10, 0), new Vector2(200, 46), Green, () =>
                 {
                     int got = GameState.I.Sell(id, int.MaxValue);
-                    if (got > 0) Toast(Fmt("ui_sold", got), 1.6f);
+                    if (got > 0) { Toast(Fmt("ui_sold", got), 1.6f); Sound.Play("coins"); }
                 });
                 // long translations ("Alles verkaufen") shrink to fit the button instead of spilling out
                 var sellText = Label(sell, Texts.Get("ui_sell_all") + "  " + total + " " + Texts.Get("ui_coins"), 20, Color.white, TextAnchor.MiddleCenter);
@@ -421,6 +425,8 @@ namespace FarmWorld.UI
             _toastGroup = box.gameObject.AddComponent<CanvasGroup>();
             _toastGroup.alpha = 0; _toastGroup.blocksRaycasts = false;
         }
+
+        void ErrorToast(string text, float seconds) { Toast(text, seconds); Sound.Play("error", 0.6f); }
 
         void Toast(string text, float seconds)
         {
@@ -515,7 +521,7 @@ namespace FarmWorld.UI
             go.name = "Button";
             var b = go.AddComponent<Button>();
             var colors = b.colors; colors.pressedColor = new Color(0.85f, 0.85f, 0.85f); b.colors = colors;
-            b.onClick.AddListener(() => onClick());
+            b.onClick.AddListener(() => { Sound.Play("tap", 0.5f); onClick(); });
             return rt;
         }
 

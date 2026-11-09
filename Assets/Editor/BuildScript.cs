@@ -36,6 +36,16 @@ namespace FarmWorld.EditorTools
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
             PlayerSettings.Android.bundleVersionCode = VersionCode(FarmWorld.Core.Bootstrap.Version);
+            // Same signature on every build, so a new test APK installs over the old one (see Keys/README.md).
+            const string keystore = "Keys/test-debug.keystore";
+            if (System.IO.File.Exists(keystore))
+            {
+                PlayerSettings.Android.useCustomKeystore = true;
+                PlayerSettings.Android.keystoreName = System.IO.Path.GetFullPath(keystore);
+                PlayerSettings.Android.keystorePass = "farmworld-test";
+                PlayerSettings.Android.keyaliasName = "farmworld";
+                PlayerSettings.Android.keyaliasPass = "farmworld-test";
+            }
 
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
             PlayerSettings.WebGL.decompressionFallback = true;   // works on any static host

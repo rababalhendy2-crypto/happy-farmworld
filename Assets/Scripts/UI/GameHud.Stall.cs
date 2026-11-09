@@ -142,7 +142,7 @@ namespace FarmWorld.UI
         /// <summary>Shows the error of a market call, or applies the new state the server returned.</summary>
         bool MarketResult(Dictionary<string, object> r)
         {
-            if (r == null) { Toast(Texts.Get("ui_try_again"), 2f); return false; }
+            if (r == null) { ErrorToast(Texts.Get("ui_try_again"), 2f); return false; }
             if (!MiniJson.B(r, "ok"))
             {
                 Toast(Texts.Get(MiniJson.S(r, "error") switch

@@ -215,12 +215,12 @@ namespace FarmWorld.UI
         void SendRequest()
         {
             string code = (_codeDraft ?? "").Trim().ToUpperInvariant();
-            if (code.Length != 6 || _socialBusy) { if (code.Length != 6) Toast(Texts.Get("ui_code_not_found"), 2f); return; }
+            if (code.Length != 6 || _socialBusy) { if (code.Length != 6) ErrorToast(Texts.Get("ui_code_not_found"), 2f); return; }
             _socialBusy = true;
             Backend.I.Rpc("hf_friend_request", "{\"p_code\":" + Backend.Str(code) + "}", r =>
             {
                 _socialBusy = false;
-                if (r == null) { Toast(Texts.Get("ui_try_again"), 2f); return; }
+                if (r == null) { ErrorToast(Texts.Get("ui_try_again"), 2f); return; }
                 if (MiniJson.B(r, "ok"))
                 {
                     _codeDraft = "";
@@ -245,7 +245,7 @@ namespace FarmWorld.UI
             Backend.I.Rpc("hf_friend_respond", "{\"p_code\":" + Backend.Str(code) + ",\"p_accept\":" + (accept ? "true" : "false") + "}", r =>
             {
                 _socialBusy = false;
-                if (r == null || !MiniJson.B(r, "ok")) { Toast(Texts.Get("ui_try_again"), 2f); return; }
+                if (r == null || !MiniJson.B(r, "ok")) { ErrorToast(Texts.Get("ui_try_again"), 2f); return; }
                 if (accept) Toast(Texts.Get("ui_friend_added"), 2.5f);
                 LoadFriends();
             });
@@ -260,7 +260,7 @@ namespace FarmWorld.UI
             Backend.I.Rpc("hf_visit", "{\"p_code\":" + Backend.Str(code) + "}", r =>
             {
                 _socialBusy = false;
-                if (r == null || !MiniJson.B(r, "ok")) { Toast(Texts.Get("ui_try_again"), 2f); return; }
+                if (r == null || !MiniJson.B(r, "ok")) { ErrorToast(Texts.Get("ui_try_again"), 2f); return; }
                 ClosePanel();
                 GameState.I.BeginVisit(r);
                 RebuildUi();
@@ -326,7 +326,7 @@ namespace FarmWorld.UI
             {
                 _socialBusy = false;
                 if (!gs.Visiting) return;
-                if (r == null) { Toast(Texts.Get("ui_try_again"), 2f); return; }
+                if (r == null) { ErrorToast(Texts.Get("ui_try_again"), 2f); return; }
                 string err = MiniJson.S(r, "error");
                 bool ok = MiniJson.B(r, "ok");
                 if (ok || err == "already")

@@ -66,6 +66,7 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> En = new()
         {
+            { "ui_sound", "Sound" }, { "ui_effects_on", "Effects: on" }, { "ui_effects_off", "Effects: off" }, { "ui_music_on", "Music: on" }, { "ui_music_off", "Music: off" },
             { "ui_settings", "Settings" }, { "ui_account_saved", "Account saved" }, { "ui_check_email", "Open the email and confirm it" },
             { "ui_guest_account", "Guest account: this farm is only on this phone and our server" },
             { "ui_save_account_title", "Save the farm with a parent's email, to play on another phone" }, { "ui_sign_in_title", "Load a saved farm" },
@@ -129,6 +130,7 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> De = new()
         {
+            { "ui_sound", "Ton" }, { "ui_effects_on", "Effekte: an" }, { "ui_effects_off", "Effekte: aus" }, { "ui_music_on", "Musik: an" }, { "ui_music_off", "Musik: aus" },
             { "ui_settings", "Einstellungen" }, { "ui_account_saved", "Konto gesichert" }, { "ui_check_email", "Öffne die E-Mail und bestätige sie" },
             { "ui_guest_account", "Gastkonto: diese Farm gibt es nur auf diesem Handy und unserem Server" },
             { "ui_save_account_title", "Farm mit der E-Mail eines Elternteils sichern, um auf einem anderen Handy zu spielen" }, { "ui_sign_in_title", "Gesicherte Farm laden" },
@@ -192,6 +194,7 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> Ar = new()
         {
+            { "ui_sound", "الصوت" }, { "ui_effects_on", "المؤثرات تعمل" }, { "ui_effects_off", "المؤثرات مطفأة" }, { "ui_music_on", "الموسيقى تعمل" }, { "ui_music_off", "الموسيقى مطفأة" },
             { "ui_settings", "الإعدادات" }, { "ui_account_saved", "الحساب محفوظ" }, { "ui_check_email", "افتح الإيميل وأكّده" },
             { "ui_guest_account", "حساب ضيف: هذه المزرعة موجودة على هذا الهاتف وسيرفرنا فقط" },
             { "ui_save_account_title", "احفظ المزرعة بإيميل أحد الوالدين للعب على هاتف آخر" }, { "ui_sign_in_title", "تحميل مزرعة محفوظة" },

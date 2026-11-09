@@ -29,7 +29,7 @@ namespace FarmWorld.UI
         void OpenSettings()
         {
             _confirmDelete = false; _signInMode = false; _accountLoaded = false;
-            OpenPanel(Texts.Get("ui_settings"), new Vector2(860, 600), FillSettings);
+            OpenPanel(Texts.Get("ui_settings"), new Vector2(860, 640), FillSettings);
             _panelKind = "settings";
             var be = Backend.I;
             if (be == null || !be.Enabled) return;
@@ -44,9 +44,21 @@ namespace FarmWorld.UI
         {
             var be = Backend.I;
             float y = 0;
+
+            // sound and music switches work without internet
+            var sound = Row(y, 60, RowColor);
+            RowText(sound, Texts.Get("ui_sound"), 22, Ink, 16, 140);
+            var sfx = Button(sound, new Vector2(Texts.Rtl ? 1 : 0, 0.5f), new Vector2(Texts.Rtl ? -170 : 170, 0), new Vector2(210, 46),
+                Sound.SfxOn ? Green : Grey, () => { Sound.SetSfx(!Sound.SfxOn); RefillPanel(); });
+            FitLabel(sfx, Texts.Get(Sound.SfxOn ? "ui_effects_on" : "ui_effects_off"), 20);
+            var mus = Button(sound, new Vector2(Texts.Rtl ? 1 : 0, 0.5f), new Vector2(Texts.Rtl ? -400 : 400, 0), new Vector2(210, 46),
+                Sound.MusicOn ? Green : Grey, () => { Sound.SetMusic(!Sound.MusicOn); RefillPanel(); });
+            FitLabel(mus, Texts.Get(Sound.MusicOn ? "ui_music_on" : "ui_music_off"), 20);
+            y += 72;
+
             if (be == null || !be.Enabled || !_accountLoaded)
             {
-                Heading(Texts.Get(be != null && be.Enabled && be.State == Backend.Status.Connecting ? "ui_loading" : "ui_online_only"), 160)
+                Heading(Texts.Get(be != null && be.Enabled && be.State == Backend.Status.Connecting ? "ui_loading" : "ui_online_only"), y + 100)
                     .alignment = TextAnchor.MiddleCenter;
                 return;
             }
@@ -148,7 +160,7 @@ namespace FarmWorld.UI
             Backend.I.SignIn(_email.Trim(), _password, ok =>
             {
                 _socialBusy = false;
-                if (!ok) { Toast(Texts.Get("ui_sign_in_failed"), 3f); return; }
+                if (!ok) { ErrorToast(Texts.Get("ui_sign_in_failed"), 3f); return; }
                 _password = "";
                 ClosePanel();
                 _friends = null;
@@ -164,7 +176,7 @@ namespace FarmWorld.UI
             Backend.I.DeleteAccount(ok =>
             {
                 _socialBusy = false;
-                if (!ok) { Toast(Texts.Get("ui_try_again"), 2.5f); return; }
+                if (!ok) { ErrorToast(Texts.Get("ui_try_again"), 2.5f); return; }
                 ClosePanel();
                 _friends = null; _accountEmail = null; _pendingEmail = null; _email = ""; _password = "";
                 RebuildUi();

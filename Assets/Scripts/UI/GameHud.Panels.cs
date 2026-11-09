@@ -112,6 +112,7 @@ namespace FarmWorld.UI
 
             _panelFill = fill;
             RefillPanel();
+            Sound.Play("open", 0.6f);
             _toastGroup.transform.SetAsLastSibling();
         }
 
@@ -251,7 +252,7 @@ namespace FarmWorld.UI
                     {
                         case GameState.BuyResult.Ok: Toast(Fmt("ui_opened", Texts.Get(def.TitleKey)), 2.5f); break;
                         case GameState.BuyResult.Locked: Toast(Fmt("ui_workshop_locked", def.UnlockLevel), 2f); break;
-                        case GameState.BuyResult.NoCoins: Toast(Texts.Get("ui_not_enough_coins"), 2f); break;
+                        case GameState.BuyResult.NoCoins: ErrorToast(Texts.Get("ui_not_enough_coins"), 2f); break;
                     }
                 });
                 FitLabel(buy, Fmt("ui_open_for", def.Cost), 24);
@@ -277,7 +278,7 @@ namespace FarmWorld.UI
                         switch (gs.CollectJob(def, index, out var made))
                         {
                             case GameState.CollectResult.Ok: Toast(Fmt("ui_made", made.Qty, Texts.Get(made.Id)), 2f); break;
-                            case GameState.CollectResult.StorageFull: Toast(Texts.Get("ui_storage_full"), 2.5f); break;
+                            case GameState.CollectResult.StorageFull: ErrorToast(Texts.Get("ui_storage_full"), 2.5f); break;
                         }
                     });
                 y += 62;
@@ -356,8 +357,8 @@ namespace FarmWorld.UI
                 var deliver = Button(card, new Vector2(0.5f, 0), new Vector2(0, 74), new Vector2(w - 40, 60), can ? Green : Grey, () =>
                 {
                     int coins = o.coins;
-                    if (gs.Deliver(index)) Toast(Fmt("ui_delivered", coins), 2.4f);
-                    else Toast(Texts.Get("ui_order_missing"), 2f);
+                    if (gs.Deliver(index)) { Toast(Fmt("ui_delivered", coins), 2.4f); Sound.Play("coins"); }
+                    else ErrorToast(Texts.Get("ui_order_missing"), 2f);
                 });
                 FitLabel(deliver, Texts.Get("ui_deliver"), 26);
                 var skip = Button(card, new Vector2(0.5f, 0), new Vector2(0, 16), new Vector2(w - 80, 46), new Color(0.88f, 0.84f, 0.76f), () => gs.ReplaceOrder(index));
@@ -393,7 +394,7 @@ namespace FarmWorld.UI
                     else
                         RowButton(row, Texts.Get("ui_claim"), 130, complete ? Green : Grey, () =>
                         {
-                            if (gs.ClaimMission(kind, mission)) Toast(Fmt("ui_mission_reward", mission.Coins), 2f);
+                            if (gs.ClaimMission(kind, mission)) { Toast(Fmt("ui_mission_reward", mission.Coins), 2f); Sound.Play("confirm"); }
                         });
                     y += 66;
                 }
@@ -428,7 +429,7 @@ namespace FarmWorld.UI
                 gs.Data.coins >= cost ? new Color(0.3f, 0.5f, 0.75f) : Grey, () =>
                 {
                     if (gs.UpgradeStorage()) Toast(Fmt("ui_storage_upgraded", capacity), 2.2f);
-                    else Toast(Texts.Get("ui_not_enough_coins"), 2f);
+                    else ErrorToast(Texts.Get("ui_not_enough_coins"), 2f);
                 });
             FitLabel(b, Fmt("ui_upgrade_storage", capacity, cost), 22);
         }

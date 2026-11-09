@@ -8,7 +8,7 @@ namespace FarmWorld.Core
     /// </summary>
     public static class Bootstrap
     {
-        public const string Version = "0.7.1";
+        public const string Version = "0.7.2";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Init()
@@ -36,6 +36,7 @@ namespace FarmWorld.Core
 
             var gs = gameObject.AddComponent<GameState>();
             gameObject.AddComponent<Backend>();
+            gameObject.AddComponent<Sound>();
             var sun = World_CreateSun();
             World = new GameObject("World").AddComponent<World.WorldBuilder>();
             World.Build();
