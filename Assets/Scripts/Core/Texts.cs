@@ -66,6 +66,16 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> En = new()
         {
+            { "ui_settings", "Settings" }, { "ui_account_saved", "Account saved" }, { "ui_check_email", "Open the email and confirm it" },
+            { "ui_guest_account", "Guest account: this farm is only on this phone and our server" },
+            { "ui_save_account_title", "Save the farm with a parent's email, to play on another phone" }, { "ui_sign_in_title", "Load a saved farm" },
+            { "ui_parent_email", "Parent's email" }, { "ui_password", "Password" }, { "ui_save_account", "Save account" }, { "ui_sign_in", "Load farm" },
+            { "ui_have_account", "I already have one" }, { "ui_new_account_instead", "Back" },
+            { "ui_sign_in_warning", "The farm on this phone will be replaced by the saved farm" },
+            { "ui_delete_data", "Delete my data" }, { "ui_delete_confirm", "Yes, delete my farm and account for ever" },
+            { "ui_email_invalid", "This email does not look right" }, { "ui_password_short", "The password needs at least 8 characters" },
+            { "ui_email_taken", "This email already has an account. Load it instead." }, { "ui_sign_in_failed", "Email or password is wrong, or the email is not confirmed yet" },
+            { "ui_signed_in", "Your saved farm is loading" }, { "ui_data_deleted", "Everything was deleted. A new farm starts." },
             { "ui_my_stall", "My stall" }, { "ui_stall_hint", "Friends can buy these when they visit you" }, { "ui_coins_n", "{0} coins" },
             { "ui_stall_full", "Your stall is full (4 offers)" }, { "ui_stall_empty", "Your storage is empty" }, { "ui_new_offer", "New offer" },
             { "ui_amount_n", "Amount {0}" }, { "ui_unit_price", "{0} coins each" }, { "ui_put_on_sale", "Put on sale for {0} coins" },
@@ -119,6 +129,16 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> De = new()
         {
+            { "ui_settings", "Einstellungen" }, { "ui_account_saved", "Konto gesichert" }, { "ui_check_email", "Öffne die E-Mail und bestätige sie" },
+            { "ui_guest_account", "Gastkonto: diese Farm gibt es nur auf diesem Handy und unserem Server" },
+            { "ui_save_account_title", "Farm mit der E-Mail eines Elternteils sichern, um auf einem anderen Handy zu spielen" }, { "ui_sign_in_title", "Gesicherte Farm laden" },
+            { "ui_parent_email", "E-Mail der Eltern" }, { "ui_password", "Passwort" }, { "ui_save_account", "Konto sichern" }, { "ui_sign_in", "Farm laden" },
+            { "ui_have_account", "Ich habe schon eins" }, { "ui_new_account_instead", "Zurück" },
+            { "ui_sign_in_warning", "Die Farm auf diesem Handy wird durch die gesicherte ersetzt" },
+            { "ui_delete_data", "Meine Daten löschen" }, { "ui_delete_confirm", "Ja, Farm und Konto für immer löschen" },
+            { "ui_email_invalid", "Diese E-Mail sieht nicht richtig aus" }, { "ui_password_short", "Das Passwort braucht mindestens 8 Zeichen" },
+            { "ui_email_taken", "Diese E-Mail hat schon ein Konto. Lade es stattdessen." }, { "ui_sign_in_failed", "E-Mail oder Passwort falsch, oder E-Mail noch nicht bestätigt" },
+            { "ui_signed_in", "Deine gesicherte Farm wird geladen" }, { "ui_data_deleted", "Alles wurde gelöscht. Eine neue Farm beginnt." },
             { "ui_my_stall", "Mein Stand" }, { "ui_stall_hint", "Freunde können das kaufen, wenn sie dich besuchen" }, { "ui_coins_n", "{0} Münzen" },
             { "ui_stall_full", "Dein Stand ist voll (4 Angebote)" }, { "ui_stall_empty", "Dein Lager ist leer" }, { "ui_new_offer", "Neues Angebot" },
             { "ui_amount_n", "Menge {0}" }, { "ui_unit_price", "{0} Münzen pro Stück" }, { "ui_put_on_sale", "Für {0} Münzen anbieten" },
@@ -172,6 +192,16 @@ namespace FarmWorld.Core
 
         static readonly Dictionary<string, string> Ar = new()
         {
+            { "ui_settings", "الإعدادات" }, { "ui_account_saved", "الحساب محفوظ" }, { "ui_check_email", "افتح الإيميل وأكّده" },
+            { "ui_guest_account", "حساب ضيف: هذه المزرعة موجودة على هذا الهاتف وسيرفرنا فقط" },
+            { "ui_save_account_title", "احفظ المزرعة بإيميل أحد الوالدين للعب على هاتف آخر" }, { "ui_sign_in_title", "تحميل مزرعة محفوظة" },
+            { "ui_parent_email", "إيميل الأهل" }, { "ui_password", "كلمة السر" }, { "ui_save_account", "حفظ الحساب" }, { "ui_sign_in", "تحميل المزرعة" },
+            { "ui_have_account", "عندي حساب" }, { "ui_new_account_instead", "رجوع" },
+            { "ui_sign_in_warning", "المزرعة على هذا الهاتف ستُستبدل بالمزرعة المحفوظة" },
+            { "ui_delete_data", "حذف بياناتي" }, { "ui_delete_confirm", "نعم، احذف المزرعة والحساب نهائيًا" },
+            { "ui_email_invalid", "هذا الإيميل لا يبدو صحيحًا" }, { "ui_password_short", "كلمة السر تحتاج 8 أحرف على الأقل" },
+            { "ui_email_taken", "لهذا الإيميل حساب من قبل. حمّله بدلًا من ذلك." }, { "ui_sign_in_failed", "الإيميل أو كلمة السر خطأ، أو الإيميل لم يُؤكَّد بعد" },
+            { "ui_signed_in", "يتم تحميل مزرعتك المحفوظة" }, { "ui_data_deleted", "تم حذف كل شيء. تبدأ مزرعة جديدة." },
             { "ui_my_stall", "بسطتي" }, { "ui_stall_hint", "يستطيع أصدقاؤك شراء هذه عند زيارتك" }, { "ui_coins_n", "{0} عملة" },
             { "ui_stall_full", "البسطة ممتلئة، الحد 4 عروض" }, { "ui_stall_empty", "المخزن فارغ" }, { "ui_new_offer", "عرض جديد" },
             { "ui_amount_n", "الكمية {0}" }, { "ui_unit_price", "{0} عملة للقطعة" }, { "ui_put_on_sale", "اعرضه للبيع بـ {0} عملة" },

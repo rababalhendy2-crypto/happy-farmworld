@@ -11,6 +11,7 @@ const friendFarm = { code: 'SAM742', display_name: 'Farmer', level: 5, likes: 7,
   animals: animals(true), liked: false, gifted: false };
 let friends = [{ code: 'SAM742', name: 'Farmer', level: 5, state: 'friend', liked: false, gifted: false }, { code: 'NAD477', name: 'Farmer', level: 2, state: 'incoming', liked: false, gifted: false }];
 let giftsShown = false;
+let pendingEmail = '';
 let myOffers = [{ id: 1, item: 'egg', qty: 2, unit_price: 16 }];
 let friendOffers = [{ id: 11, item: 'milk', qty: 2, unit_price: 20 }, { id: 12, item: 'pumpkin', qty: 1, unit_price: 90 }, { id: 13, item: 'bread', qty: 3, unit_price: 100 }];
 let nextId = 20;
@@ -18,6 +19,10 @@ const log = [];
 function state() { return Object.assign({}, me, { server_time: now(), version: 1 }); }
 function handle(path, body) {
   log.push(path + ' ' + JSON.stringify(body || {}).slice(0, 120));
+  if (path.endsWith('/auth/v1/user')) {
+    if (body && body.email) { pendingEmail = body.email; return { id: 'u1', email: '', new_email: body.email }; }
+    return { id: 'u1', email: '', new_email: pendingEmail };
+  }
   if (path.includes('/auth/v1/')) return { access_token: 'tok', refresh_token: 'ref', expires_in: 3600, user: { id: 'u1' } };
   const fn = path.split('/rpc/')[1];
   switch (fn) {
@@ -44,6 +49,7 @@ function handle(path, body) {
       if (body.p_accept) f.state = 'friend'; else friends = friends.filter(x => x != f);
       return { ok: true, error: '' };
     }
+    case 'hf_delete_my_data': return { ok: true, error: '' };
     case 'hf_market_offers': return { ok: true, offers: body.p_code ? friendOffers : myOffers };
     case 'hf_market_list': {
       if (myOffers.length >= 4) return { ok: false, error: 'full' };

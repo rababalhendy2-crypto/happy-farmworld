@@ -91,7 +91,7 @@ namespace FarmWorld.UI
 
             BuildTopBar();
             if (GameState.I != null && GameState.I.Visiting) BuildVisitBar();
-            else { BuildBottomBar(); BuildFriendsButton(); }
+            else { BuildBottomBar(); BuildFriendsButton(); BuildSettingsButton(); }
             BuildSeedSheet();
             BuildStorageWindow();
             BuildToast();

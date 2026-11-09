@@ -83,6 +83,19 @@ namespace FarmWorld.Core
             return n;
         }
 
+        /// <summary>Forgets the local farm (after the account was deleted) and starts a new one.</summary>
+        public void ResetLocal()
+        {
+            _home = null;
+            try { if (File.Exists(_path)) File.Delete(_path); } catch (Exception e) { Debug.LogWarning("[GameState] " + e.Message); }
+            Data = LoadOrNew();
+            while (Data.plots.Count < GameConfig.StartingPlots) Data.plots.Add(new PlotSave());
+            FriendCode = "";
+            Save();
+            ServerApplied?.Invoke();
+            Changed?.Invoke();
+        }
+
         public void Save()
         {
             try

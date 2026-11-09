@@ -76,6 +76,76 @@ namespace FarmWorld.Core
 
         public bool Online => State == Status.Online;
 
+        // ------------------------------------------------------------------ account (settings window)
+
+        /// <summary>The login's email (confirmed) and an email waiting for confirmation; null, null when offline.</summary>
+        public void GetAccount(Action<string, string> done) => StartCoroutine(AccountRoutine(done));
+
+        IEnumerator AccountRoutine(Action<string, string> done)
+        {
+            bool ok = false;
+            yield return EnsureSession(r => ok = r);
+            if (!ok) { done(null, null); yield break; }
+            long code = 0; string text = null;
+            yield return Send("GET", "/auth/v1/user", null, true, (c, b) => { code = c; text = b; });
+            if (code != 200) { done(null, null); yield break; }
+            var o = MiniJson.Parse(text);
+            done(MiniJson.S(o, "email"), MiniJson.S(o, "new_email"));
+        }
+
+        /// <summary>Turns the guest account into one with email + password (Supabase sends a confirmation email).
+        /// done(true, "") or done(false, error message from the server).</summary>
+        public void LinkEmail(string email, string password, Action<bool, string> done) => StartCoroutine(LinkRoutine(email, password, done));
+
+        IEnumerator LinkRoutine(string email, string password, Action<bool, string> done)
+        {
+            bool ok = false;
+            yield return EnsureSession(r => ok = r);
+            if (!ok) { done(false, ""); yield break; }
+            long code = 0; string text = null;
+            yield return Send("PUT", "/auth/v1/user", "{\"email\":" + Str(email) + ",\"password\":" + Str(password) + "}", true, (c, b) => { code = c; text = b; });
+            if (code == 200) { done(true, ""); yield break; }
+            var o = MiniJson.Parse(text ?? "");
+            string msg = MiniJson.S(o, "msg", MiniJson.S(o, "error_description", MiniJson.S(o, "message")));
+            Debug.LogWarning($"[Backend] link email failed ({code}): {text}");
+            done(false, msg);
+        }
+
+        /// <summary>Signs in to an existing account (another phone). Unsent guest actions are dropped; the
+        /// account's farm then replaces the local one.</summary>
+        public void SignIn(string email, string password, Action<bool> done) => StartCoroutine(SignInRoutine(email, password, done));
+
+        IEnumerator SignInRoutine(string email, string password, Action<bool> done)
+        {
+            long code = 0; string text = null;
+            yield return Post("/auth/v1/token?grant_type=password", "{\"email\":" + Str(email) + ",\"password\":" + Str(password) + "}", false,
+                (c, b) => { code = c; text = b; });
+            if (code != 200 || !ReadSession(text)) { done(false); yield break; }
+            _queue.items.Clear();
+            Store(QueueKey, _queue);
+            done(true);
+            Refresh();
+        }
+
+        /// <summary>Deletes the account and all its game data on the server, then starts a fresh guest farm.</summary>
+        public void DeleteAccount(Action<bool> done)
+        {
+            Rpc("hf_delete_my_data", "{}", r =>
+            {
+                bool ok = r != null && MiniJson.B(r, "ok");
+                if (ok)
+                {
+                    _session = null;
+                    _queue.items.Clear();
+                    PlayerPrefs.DeleteKey(SessionKey);
+                    Store(QueueKey, _queue);
+                    if (GameState.I != null) GameState.I.ResetLocal();
+                    Refresh();   // signs up a new guest account
+                }
+                done(ok);
+            });
+        }
+
         /// <summary>Applies a state returned by a direct RPC, unless queued actions would be overwritten (then it refetches).</summary>
         public void ApplyState(Dictionary<string, object> state)
         {
@@ -235,10 +305,12 @@ namespace FarmWorld.Core
 
         // ------------------------------------------------------------------ HTTP
 
-        IEnumerator Post(string path, string json, bool authed, Action<long, string> done)
+        IEnumerator Post(string path, string json, bool authed, Action<long, string> done) => Send("POST", path, json, authed, done);
+
+        IEnumerator Send(string method, string path, string json, bool authed, Action<long, string> done)
         {
-            using var req = new UnityWebRequest(_url + path, "POST");
-            req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+            using var req = new UnityWebRequest(_url + path, method);
+            if (json != null) req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
             req.downloadHandler = new DownloadHandlerBuffer();
             req.timeout = 15;
             req.SetRequestHeader("Content-Type", "application/json");
