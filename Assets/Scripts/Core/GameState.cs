@@ -84,8 +84,12 @@ namespace FarmWorld.Core
         }
 
         /// <summary>Forgets the local farm (after the account was deleted) and starts a new one.</summary>
+        /// <summary>Set when another account's farm is about to load: its level is not a level-up.</summary>
+        public bool QuietNextApply { get; set; }
+
         public void ResetLocal()
         {
+            QuietNextApply = true;
             _home = null;
             try { if (File.Exists(_path)) File.Delete(_path); } catch (Exception e) { Debug.LogWarning("[GameState] " + e.Message); }
             Data = LoadOrNew();
@@ -609,7 +613,8 @@ namespace FarmWorld.Core
             }
             int oldLevel = Data.level;
             ApplyCore(s);
-            if (Data.level > oldLevel) LeveledUp?.Invoke(Data.level);
+            if (Data.level > oldLevel && !QuietNextApply) LeveledUp?.Invoke(Data.level);
+            QuietNextApply = false;
             Touch();
             ServerApplied?.Invoke();
         }

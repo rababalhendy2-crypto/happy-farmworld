@@ -123,6 +123,7 @@ namespace FarmWorld.Core
             if (code != 200 || !ReadSession(text)) { done(false); yield break; }
             _queue.items.Clear();
             Store(QueueKey, _queue);
+            if (GameState.I != null) GameState.I.QuietNextApply = true;
             done(true);
             Refresh();
         }
