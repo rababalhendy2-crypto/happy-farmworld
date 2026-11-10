@@ -54,7 +54,7 @@ namespace FarmWorld.Farming
             // Crop models (Tools/models/crops.py) are authored in metres for each growth stage; sizing each one to its
             // authored height times one scale per crop keeps the real proportions between stages. Planting grid matches the five soil ridges built by WorldBuilder.BuildField.
             float scale = m == "Corn" ? 0.75f : m == "Wheat" ? 0.9f : 1f;
-            int perRow = m == "Pumpkin" ? 3 : m == "Wheat" ? 9 : m == "Tomato" ? 5 : 6;
+            int perRow = m == "Pumpkin" ? 3 : m == "Wheat" ? 8 : m == "Tomato" ? 4 : 5;
             bool shadows = stage >= 3 && (m == "Corn" || m == "Tomato" || m == "Pumpkin");
             string model = m + "_" + stage;
             float h = scale * (CropHeights.Metres.TryGetValue(model, out var mh) ? mh : 0.5f);
@@ -65,7 +65,7 @@ namespace FarmWorld.Farming
                 float z = RowZ(r);
                 for (int k = 0; k < perRow; k++)
                 {
-                    float x = -1.6f + (k + 0.5f) * 3.2f / perRow;
+                    float x = -1.3f + (k + 0.5f) * 2.6f / perRow;
                     var p = new Vector3(x + R(-0.06f, 0.06f), 0.3f, z + R(-0.05f, 0.05f));
                     ModelLibrary.Spawn("Crops/" + model + ".obj", _plants, p, h * R(0.88f, 1.1f),
                         ModelLibrary.Fit.Height, R(0, 360), null, shadows);
@@ -76,7 +76,7 @@ namespace FarmWorld.Farming
         }
 
         public const int Rows = 5;
-        public static float RowZ(int r) => -1.5f + r * 0.75f;
+        public static float RowZ(int r) => -1.2f + r * 0.6f;
 
         /// <summary>Kept for callers; plants are static-batched, so feedback comes from the floating label instead.</summary>
         public void Pop() { }

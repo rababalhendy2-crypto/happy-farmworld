@@ -52,8 +52,8 @@ items = {
     'bonfire':      item('decor', 60, 3, 4, 'Village/Bonfire.obj', 1.3, 'footprint'),
     'cauldron':     item('decor', 60, 3, 4, 'Village/Cauldron.obj', 0.9, 'footprint'),
     # pets: walk around where they are placed
-    'dog':          item('pet', 500, 2, 3, 'Characters/Dog', 1.0, 'length'),
-    'husky':        item('pet', 600, 3, 3, 'Characters/Husky', 1.1, 'length'),
+    'dog':          item('pet', 500, 2, 3, 'Characters/Dog', 1.4, 'length'),
+    'husky':        item('pet', 600, 3, 3, 'Characters/Husky', 1.55, 'length'),
     'cat':          item('pet', 400, 2, 3, 'Characters/Cat', 0.6, 'length'),
 }
 

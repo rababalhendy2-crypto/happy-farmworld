@@ -74,19 +74,21 @@ namespace FarmWorld.World
             string id = it.t, title = "build_" + it.t;
             switch (def.Model)
             {
-                case "proc:field": BuildFieldContent(t); piece.Size = new Vector2(4.2f, 4.0f); kind = "field"; id = "field_" + it.p; title = "field"; break;
+                case "proc:field": BuildFieldContent(t); piece.Size = new Vector2(3.4f, 3.2f); kind = "field"; id = "field_" + it.p; title = "field"; break;
                 case "proc:coop": BuildCoopContent(t); piece.Size = new Vector2(7.2f, 7f); kind = "building"; id = "coop"; title = "bld_coop"; break;
                 case "proc:silo": BuildSiloContent(t); piece.Size = new Vector2(2.8f, 2.8f); kind = "building"; id = "silo"; title = "bld_silo"; break;
                 case "proc:pen": BuildPenContent(t); piece.Size = new Vector2(9.2f, 9.2f); kind = "decor"; title = "build_pen"; break;
                 case "proc:fence_white": FenceSection(t, Hex("#f4efe6")); piece.Size = new Vector2(2f, 0.3f); break;
                 case "proc:hedge":
-                    Prim(PrimitiveType.Cube, t, new Vector3(0, 0.45f, 0), new Vector3(2f, 0.9f, 0.6f), Hex("#3f7f35"));
-                    Prim(PrimitiveType.Cube, t, new Vector3(0, 0.75f, 0), new Vector3(1.9f, 0.4f, 0.5f), Hex("#4c9440"));
+                    Prim(PrimitiveType.Cube, t, new Vector3(0, 0.65f, 0), new Vector3(2f, 1.3f, 0.7f), Hex("#3f7f35"));
+                    Prim(PrimitiveType.Cube, t, new Vector3(0, 1.1f, 0), new Vector3(1.9f, 0.5f, 0.6f), Hex("#4c9440"));
                     piece.Size = new Vector2(2f, 0.6f); break;
                 default:
                     if (def.Cat == "pet") { SpawnPet(piece, t, def, ghost); piece.Size = Vector2.zero; break; }
                     var fit = def.Fit == "footprint" ? Fit.Footprint : def.Fit == "length" ? Fit.Length : Fit.Height;
                     var m = ModelLibrary.Spawn(def.Model, t, Vector3.zero, def.Size, fit, 0f);
+                    // The wooden fence model is fitted to its 2 m length; make it as tall as the other fences.
+                    if (m != null && def.Cat == "fence") m.transform.localScale = new Vector3(1f, 1.5f, 1f);
                     if (m != null && def.Cat == "tree") m.AddComponent<WindSway>();
                     var b = ModelLibrary.LocalBounds(root, t);
                     piece.Size = new Vector2(b.size.x, b.size.z);
@@ -104,7 +106,7 @@ namespace FarmWorld.World
             if (kind == "field")
             {
                 var col = root.AddComponent<BoxCollider>();
-                col.center = new Vector3(0, 0.9f, 0); col.size = new Vector3(4.2f, 1.8f, 4.0f);
+                col.center = new Vector3(0, 0.9f, 0); col.size = new Vector3(3.4f, 1.8f, 3.2f);
                 if (!ghost) root.AddComponent<Farming.FieldPlot>().Index = it.p;
             }
             else if (def.Model != "proc:pen" && def.Model != "proc:coop" && def.Cat != "pet")
@@ -112,26 +114,29 @@ namespace FarmWorld.World
                 var b = ModelLibrary.LocalBounds(root, t);
                 var col = root.AddComponent<BoxCollider>();
                 col.center = b.center; col.size = b.size + Vector3.one * 0.2f;
-                if (def.Cat == "fence") col.size = new Vector3(2f, 1.2f, 0.8f);
+                if (def.Cat == "fence") col.size = new Vector3(2f, 1.6f, 0.8f);
             }
             piece.Place(it.x, it.z, it.r);
             if (!ghost) piece.SpawnAnimals(this);
             return piece;
         }
 
+        const float FenceH = 1.35f;
+        static readonly float[] FenceRails = { 0.4f, 0.8f, 1.2f };
+
         void FenceSection(Transform t, Color c)
         {
-            foreach (var x in new[] { -0.93f, 0f, 0.93f })
-                Prim(PrimitiveType.Cube, t, new Vector3(x, 0.45f, 0), new Vector3(0.14f, 0.9f, 0.14f), c);
-            foreach (var y in new[] { 0.35f, 0.7f })
-                Prim(PrimitiveType.Cube, t, new Vector3(0, y, 0), new Vector3(2f, 0.1f, 0.06f), c);
+            foreach (var x in new[] { -0.92f, 0f, 0.92f })
+                Prim(PrimitiveType.Cube, t, new Vector3(x, FenceH / 2, 0), new Vector3(0.2f, FenceH, 0.2f), c);
+            foreach (var y in FenceRails)
+                Prim(PrimitiveType.Cube, t, new Vector3(0, y, 0), new Vector3(2f, 0.14f, 0.08f), c);
         }
 
         void BuildFieldContent(Transform t)
         {
-            Prim(PrimitiveType.Cube, t, new Vector3(0, 0.12f, 0), new Vector3(4f, 0.24f, 3.8f), Hex("#7a4b2c"));
+            Prim(PrimitiveType.Cube, t, new Vector3(0, 0.12f, 0), new Vector3(3.2f, 0.24f, 3.0f), Hex("#7a4b2c"));
             for (int r = 0; r < Farming.FieldPlot.Rows; r++)
-                Prim(PrimitiveType.Cube, t, new Vector3(0, 0.27f, Farming.FieldPlot.RowZ(r)), new Vector3(3.6f, 0.08f, 0.4f), Hex("#5e3720"));
+                Prim(PrimitiveType.Cube, t, new Vector3(0, 0.27f, Farming.FieldPlot.RowZ(r)), new Vector3(2.9f, 0.08f, 0.34f), Hex("#5e3720"));
         }
 
         /// <summary>Hen house with its yard in front (local -z). The chickens live in the yard.</summary>
@@ -175,16 +180,16 @@ namespace FarmWorld.World
             {
                 int posts = Mathf.Max(1, Mathf.RoundToInt((b - a).magnitude / spacing));
                 for (int i = 0; i <= posts; i++)
-                    Prim(PrimitiveType.Cube, parent, Vector3.Lerp(a, b, i / (float)posts) + Vector3.up * 0.45f, new Vector3(0.14f, 0.9f, 0.14f), c);
+                    Prim(PrimitiveType.Cube, parent, Vector3.Lerp(a, b, i / (float)posts) + Vector3.up * FenceH / 2, new Vector3(0.2f, FenceH, 0.2f), c);
                 var d = b - a; var mid = (a + b) / 2;
                 float yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
-                foreach (var y in new[] { 0.35f, 0.7f })
-                    Prim(PrimitiveType.Cube, parent, mid + Vector3.up * y, new Vector3(0.06f, 0.1f, d.magnitude), c, new Vector3(0, yaw, 0));
+                foreach (var y in FenceRails)
+                    Prim(PrimitiveType.Cube, parent, mid + Vector3.up * y, new Vector3(0.08f, 0.14f, d.magnitude), c, new Vector3(0, yaw, 0));
                 if (colliders)
                 {
                     var g = new GameObject("Wall"); g.transform.SetParent(parent, false);
-                    g.transform.localPosition = mid + Vector3.up * 0.6f; g.transform.localEulerAngles = new Vector3(0, yaw, 0);
-                    g.AddComponent<BoxCollider>().size = new Vector3(0.7f, 1.2f, d.magnitude);
+                    g.transform.localPosition = mid + Vector3.up * 0.8f; g.transform.localEulerAngles = new Vector3(0, yaw, 0);
+                    g.AddComponent<BoxCollider>().size = new Vector3(0.7f, 1.6f, d.magnitude);
                 }
             }
             var p0 = new Vector3(r.xMin, 0, r.yMin); var p1 = new Vector3(r.xMax, 0, r.yMin);
@@ -256,7 +261,7 @@ namespace FarmWorld.World
             _farmer.name = "Farmer";
             _farmer.Speed = 1.3f; _farmer.Farmer = true; _farmer.Radius = 0f;
             Selectable.Make(_farmer.gameObject, "farmer", "farmer", "farmer_name");
-            _farmerDog = SpawnWalker(_life, "Dog", 0.95f, Fit.Length, start + new Vector3(1.2f, 0, -0.6f));
+            _farmerDog = SpawnWalker(_life, "Dog", 1.35f, Fit.Length, start + new Vector3(1.2f, 0, -0.6f));
             if (_farmerDog != null)
             {
                 _farmerDog.name = "FarmerDog";
