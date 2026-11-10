@@ -15,14 +15,14 @@ def lin(hexs):
     return tuple(round((int(h[i:i + 2], 16) / 255.0) ** 2.2, 5) for i in (0, 2, 4))
 
 PAL = {
-    'leaf_dark': lin('#3f7a2a'), 'leaf': lin('#5a9a32'), 'leaf_light': lin('#7fb843'), 'leaf_old': lin('#9aa845'),
-    'stalk': lin('#6f9e3a'), 'husk': lin('#8fb653'), 'kernel': lin('#ffd23c'), 'silk': lin('#b9773a'),
-    'tassel': lin('#c9a85a'), 'wheat_green': lin('#86ad45'), 'wheat_gold': lin('#f0c75a'), 'wheat_stem': lin('#dcb75e'),
-    'carrot': lin('#ec7a1c'), 'fern': lin('#4f9a2c'), 'fern_light': lin('#6db43a'),
-    'tomato': lin('#d9301f'), 'tomato_green': lin('#8dbb3f'), 'flower_y': lin('#f4d23a'), 'stake': lin('#9b7148'),
-    'pumpkin': lin('#ea7d1e'), 'pumpkin_green': lin('#6f9a35'), 'vine': lin('#5f8f2e'), 'pstem': lin('#7c6a35'),
-    'berry': lin('#e02a3a'), 'berry_white': lin('#e9e2c8'), 'petal': lin('#fbfaf2'), 'seed': lin('#f3d55a'),
-    'strawleaf': lin('#3d8a2e'),
+    'leaf_dark': lin('#285c18'), 'leaf': lin('#367a1f'), 'leaf_light': lin('#4d9126'), 'leaf_old': lin('#7d8a2c'),
+    'stalk': lin('#4a7f25'), 'husk': lin('#6a9433'), 'kernel': lin('#f5b81c'), 'silk': lin('#9a5a24'),
+    'tassel': lin('#b08a3c'), 'wheat_green': lin('#668f28'), 'wheat_gold': lin('#d39a2c'), 'wheat_stem': lin('#be8c34'),
+    'carrot': lin('#e8640e'), 'fern': lin('#2a7019'), 'fern_light': lin('#3f8a22'),
+    'tomato': lin('#cc1a0e'), 'tomato_green': lin('#78a82c'), 'flower_y': lin('#f4d23a'), 'stake': lin('#7d5532'),
+    'pumpkin': lin('#e86a0c'), 'pumpkin_green': lin('#55822a'), 'vine': lin('#43731f'), 'pstem': lin('#5f4f25'),
+    'berry': lin('#d01426'), 'berry_white': lin('#e9e2c8'), 'petal': lin('#fbfaf2'), 'seed': lin('#f3d55a'),
+    'strawleaf': lin('#2c6e1f'),
 }
 
 
@@ -172,7 +172,7 @@ def corn(stage):
         mat = 'leaf_old' if stage == 4 and i < 2 else ('leaf' if i % 3 else 'leaf_dark')
         if stage >= 3 and i == n_leaves - 1: mat = 'leaf_light'
         yaw = i * math.pi + rnd.uniform(-0.45, 0.45)
-        leaf(m, mat, (0, y, 0), yaw, L, L * 0.085, rise=rnd.uniform(1.15, 1.4), droop=rnd.uniform(1.5, 2.1),
+        leaf(m, mat, (0, y, 0), yaw, L, L * 0.11, rise=rnd.uniform(1.15, 1.4), droop=rnd.uniform(1.5, 2.1),
              fold=0.35, segs=7, twist=rnd.uniform(-0.6, 0.6))
     if stage >= 3:  # tassel
         top = np.array([0, stalk_h, 0.])

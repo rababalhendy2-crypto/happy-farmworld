@@ -9,7 +9,7 @@ namespace FarmWorld.Farming
         public static readonly Dictionary<string, float> Metres = new()
         {
             ["Corn_1"] = 0.1615f,
-            ["Corn_2"] = 0.6621f,
+            ["Corn_2"] = 0.6626f,
             ["Corn_3"] = 1.6700f,
             ["Corn_4"] = 1.9700f,
             ["Wheat_1"] = 0.2732f,
