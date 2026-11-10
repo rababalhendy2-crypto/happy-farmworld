@@ -1,22 +1,25 @@
-# Blender MTL File: 'Carrot_3.blend'
-# Material Count: 2
+# Farm World procedural crop (CC0)
 
-newmtl Green
-Ns 96.078431
-Ka 1.000000 1.000000 1.000000
-Kd 0.185317 0.358380 0.101168
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.000000
-d 1.000000
+newmtl fern
+Ns 20.0
+Ka 1 1 1
+Kd 0.07593 0.32973 0.02095
+Ks 0.05 0.05 0.05
+d 1.0
 illum 2
 
-newmtl LightOrange
-Ns 96.078431
-Ka 1.000000 1.000000 1.000000
-Kd 0.439078 0.263352 0.084138
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.000000
-d 1.000000
+newmtl fern_light
+Ns 20.0
+Ka 1 1 1
+Kd 0.15415 0.46474 0.03847
+Ks 0.05 0.05 0.05
+d 1.0
+illum 2
+
+newmtl carrot
+Ns 20.0
+Ka 1 1 1
+Kd 0.84337 0.19752 0.00775
+Ks 0.05 0.05 0.05
+d 1.0
 illum 2

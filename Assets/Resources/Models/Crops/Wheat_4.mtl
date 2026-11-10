@@ -1,12 +1,17 @@
-# Blender MTL File: 'Wheat_4.blend'
-# Material Count: 1
+# Farm World procedural crop (CC0)
 
-newmtl Yellow
-Ns 96.078431
-Ka 1.000000 1.000000 1.000000
-Kd 0.358380 0.283791 0.090115
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.000000
-d 1.000000
+newmtl wheat_stem
+Ns 20.0
+Ka 1 1 1
+Kd 0.72267 0.48195 0.11130
+Ks 0.05 0.05 0.05
+d 1.0
+illum 2
+
+newmtl wheat_gold
+Ns 20.0
+Ka 1 1 1
+Kd 0.87514 0.57955 0.10115
+Ks 0.05 0.05 0.05
+d 1.0
 illum 2

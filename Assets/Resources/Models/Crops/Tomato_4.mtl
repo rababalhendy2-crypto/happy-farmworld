@@ -1,22 +1,57 @@
-# Blender MTL File: 'Tomato_4.blend'
-# Material Count: 2
+# Farm World procedural crop (CC0)
 
-newmtl Green
-Ns 96.078431
-Ka 1.000000 1.000000 1.000000
-Kd 0.185317 0.358380 0.101168
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.000000
-d 1.000000
+newmtl stake
+Ns 20.0
+Ka 1 1 1
+Kd 0.33446 0.16687 0.06191
+Ks 0.05 0.05 0.05
+d 1.0
 illum 2
 
-newmtl Red
-Ns 96.078431
-Ka 1.000000 1.000000 1.000000
-Kd 0.134357 0.034020 0.014163
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.000000
-d 1.000000
+newmtl stalk
+Ns 20.0
+Ka 1 1 1
+Kd 0.16044 0.34886 0.03847
+Ks 0.05 0.05 0.05
+d 1.0
+illum 2
+
+newmtl leaf_light
+Ns 20.0
+Ka 1 1 1
+Kd 0.21576 0.48777 0.05284
+Ks 0.05 0.05 0.05
+d 1.0
+illum 2
+
+newmtl leaf_dark
+Ns 20.0
+Ka 1 1 1
+Kd 0.04615 0.19752 0.01891
+Ks 0.05 0.05 0.05
+d 1.0
+illum 2
+
+newmtl leaf
+Ns 20.0
+Ka 1 1 1
+Kd 0.10115 0.32973 0.02776
+Ks 0.05 0.05 0.05
+d 1.0
+illum 2
+
+newmtl tomato_green
+Ns 20.0
+Ka 1 1 1
+Kd 0.27158 0.50543 0.04615
+Ks 0.05 0.05 0.05
+d 1.0
+illum 2
+
+newmtl tomato
+Ns 20.0
+Ka 1 1 1
+Kd 0.70117 0.02537 0.00970
+Ks 0.05 0.05 0.05
+d 1.0
 illum 2

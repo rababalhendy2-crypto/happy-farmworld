@@ -1,12 +1,25 @@
-# Blender MTL File: 'BushBerries_2.blend'
-# Material Count: 1
+# Farm World procedural crop (CC0)
 
-newmtl Green_Bush
-Ns 96.078431
-Ka 1.000000 1.000000 1.000000
-Kd 0.069954 0.121857 0.047888
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.000000
-d 1.000000
+newmtl vine
+Ns 20.0
+Ka 1 1 1
+Kd 0.11392 0.28012 0.02310
+Ks 0.05 0.05 0.05
+d 1.0
+illum 2
+
+newmtl strawleaf
+Ns 20.0
+Ka 1 1 1
+Kd 0.04299 0.25903 0.02310
+Ks 0.05 0.05 0.05
+d 1.0
+illum 2
+
+newmtl leaf
+Ns 20.0
+Ka 1 1 1
+Kd 0.10115 0.32973 0.02776
+Ks 0.05 0.05 0.05
+d 1.0
 illum 2

@@ -51,13 +51,13 @@ namespace FarmWorld.Farming
             _plants = new GameObject("Plants").transform;
             _plants.SetParent(transform, false);
             string m = crop.Model;
-            // Planting grid matches the five soil ridges built by WorldBuilder.BuildField.
-            float h = m == "Corn" ? 1.5f : m == "Wheat" ? 0.85f : m == "Tomato" ? 0.95f : m == "Pumpkin" ? 0.55f : 0.5f;
-            h *= 0.35f + 0.65f * stage / 4f;
-            int perRow = m == "Pumpkin" ? 3 : m == "Wheat" ? 9 : 6;
-            int tuft = m == "Wheat" ? 3 : 1;                 // wheat stalks are thin: plant small clumps
-            float thick = m == "Wheat" ? 1.8f : m == "Corn" ? 1.25f : 1.15f;
-            Color? ripeTint = stage == 4 && m == "Wheat" ? new Color(1.35f, 1.2f, 0.8f) : (Color?)null;
+            // Crop models (Tools/models/crops.py) are authored in metres for each growth stage; sizing each one to its
+            // authored height times one scale per crop keeps the real proportions between stages. Planting grid matches the five soil ridges built by WorldBuilder.BuildField.
+            float scale = m == "Corn" ? 0.75f : m == "Wheat" ? 0.9f : 1f;
+            int perRow = m == "Pumpkin" ? 3 : m == "Wheat" ? 9 : m == "Tomato" ? 5 : 6;
+            bool shadows = stage >= 3 && (m == "Corn" || m == "Tomato" || m == "Pumpkin");
+            string model = m + "_" + stage;
+            float h = scale * (CropHeights.Metres.TryGetValue(model, out var mh) ? mh : 0.5f);
             var rnd = new System.Random(Index * 97 + stage);
             float R(float a, float b) => a + (float)rnd.NextDouble() * (b - a);
             for (int r = 0; r < Rows; r++)
@@ -66,15 +66,9 @@ namespace FarmWorld.Farming
                 for (int k = 0; k < perRow; k++)
                 {
                     float x = -1.6f + (k + 0.5f) * 3.2f / perRow;
-                    for (int t = 0; t < tuft; t++)
-                    {
-                        var p = new Vector3(x + R(-0.09f, 0.09f), 0.3f, z + R(-0.07f, 0.07f));
-                        var plant = ModelLibrary.Spawn("Crops/" + m + "_" + stage + ".obj", _plants, p, h * R(0.85f, 1.1f),
-                            ModelLibrary.Fit.Height, R(0, 360), ripeTint, stage >= 3 && t == 0);
-                        if (plant == null) continue;
-                        plant.transform.localScale = new Vector3(thick, 1f, thick);
-                        if (tuft > 1) plant.transform.localRotation *= Quaternion.Euler(R(-8f, 8f), 0, R(-8f, 8f));
-                    }
+                    var p = new Vector3(x + R(-0.06f, 0.06f), 0.3f, z + R(-0.05f, 0.05f));
+                    ModelLibrary.Spawn("Crops/" + model + ".obj", _plants, p, h * R(0.88f, 1.1f),
+                        ModelLibrary.Fit.Height, R(0, 360), null, shadows);
                 }
             }
             // Hundreds of small meshes per field: merge them into a few draw calls for phones.

@@ -3,7 +3,7 @@ name: Build Farm World
 
 on:
   push:
-    branches: [main, unity]
+    branches: [main, unity, 'claude/**']
     paths: ['Assets/**', 'Packages/**', 'ProjectSettings/**', '.github/workflows/build.yml']
   workflow_dispatch:
 
